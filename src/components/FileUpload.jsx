@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
-import { Upload, FileText, AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react'
+import { Upload, FileText, AlertCircle, CheckCircle2, ChevronDown, Table } from 'lucide-react'
 import { parseCSVFile, extractHeadersAndData, inferHeaderRow, transformDataForChart, formatFileSize } from '@/lib/dataUtils.js'
 
 export function FileUpload({ onDataLoaded }) {
@@ -15,6 +15,8 @@ export function FileUpload({ onDataLoaded }) {
   const [xColumn, setXColumn] = useState('')
   const [yColumn, setYColumn] = useState('')
   const [dragActive, setDragActive] = useState(false)
+  const [showSampleData, setShowSampleData] = useState(false) // サンプルデータ表示フラグ
+  const [sampleData, setSampleData] = useState(null) // サンプルデータの内容
 
   // ヘッダー行が変更されたときにデータを再処理
   useEffect(() => {
@@ -36,6 +38,23 @@ export function FileUpload({ onDataLoaded }) {
       }
     }
   }, [rawRows, headerRowIndex])
+
+  // サンプルデータを読み込む
+  useEffect(() => {
+    const loadSampleData = async () => {
+      try {
+        const response = await fetch('/sample-good-data.csv')
+        const text = await response.text()
+        const parsed = await parseCSVFile(new File([text], 'sample-good-data.csv', { type: 'text/csv' }))
+        const inferredIndex = inferHeaderRow(parsed.rawRows)
+        const { headers, data } = extractHeadersAndData(parsed.rawRows, inferredIndex)
+        setSampleData({ headers, data })
+      } catch (err) {
+        console.error('サンプルデータの読み込みに失敗しました:', err)
+      }
+    }
+    loadSampleData()
+  }, [])
 
   // ドラッグ&ドロップ処理
   const handleDrag = useCallback((e) => {
@@ -189,7 +208,7 @@ export function FileUpload({ onDataLoaded }) {
                     {file.name}
                   </p>
                   <p className="text-green-600 dark:text-green-300 text-sm">
-                    {formatFileSize(file.size)} • {rawRows?.length || 0} 行のデータ
+                    {rawRows?.length || 0} 行のデータ
                   </p>
                 </div>
                 <Button 
@@ -232,11 +251,68 @@ export function FileUpload({ onDataLoaded }) {
             </h3>
             <ul className="text-blue-800 dark:text-blue-200 space-y-1 text-sm">
               <li>• CSV形式またはExcel形式（.xlsx, .xls）に対応</li>
-              <li>• 1行目にヘッダー（列名）を含めてください</li>
+              <li>• 1行目にヘッダー（列名）を含めることを推奨しますが、後から選択可能です。</li>
               <li>• 最低2列のデータ（X軸、Y軸）が必要です</li>
               <li>• 数値データは自動的に認識されます</li>
+              <li>• 日本語を含む多言語の列名やデータに対応しています。</li>
             </ul>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* サンプルデータ表示エリア */}
+      <Card className="glass-card fade-in stagger-animation">
+        <CardHeader>
+          <CardTitle>グラフ作成に最適なデータ構成の例</CardTitle>
+          <CardDescription>
+            どのような形式のファイルをアップロードすればスムーズにグラフが作成できるか、以下の例でご確認ください。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button 
+            variant="outline" 
+            className="glass-button w-full"
+            onClick={() => setShowSampleData(!showSampleData)}
+          >
+            <Table className="h-4 w-4 mr-2" />
+            {showSampleData ? 'サンプルデータを非表示' : 'サンプルデータを表示'}
+          </Button>
+
+          {showSampleData && sampleData && (
+            <div className="mt-4 slide-in-bottom">
+              <h4 className="text-sm font-medium mb-2">推奨されるデータ構成例</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      {sampleData.headers.map((header) => (
+                        <th key={header} className="px-3 py-2 text-left font-medium">
+                          {header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sampleData.data.slice(0, 5).map((row, index) => (
+                      <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
+                        {sampleData.headers.map((header) => (
+                          <td key={header} className="px-3 py-2">
+                            {row[header]}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                <p>この例では、1行目がヘッダー（列名）となっており、各列にデータが整理されています。</p>
+                <p><strong>X軸（横軸）</strong>には「月」のようなカテゴリデータや時系列データ、<strong>Y軸（縦軸）</strong>には「売上」や「顧客数」のような数値データが適しています。</p>
+                <p>ただし、X軸とY軸のデータタイプは、アップロード後に柔軟に選択・調整可能です。例えば、X軸に数値、Y軸にカテゴリデータを選択することもできますが、グラフの種類によっては視覚的に分かりにくくなる場合があります。</p>
+                <p>日本語を含む多言語の列名やデータも問題なく認識し、グラフに反映されます。</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
