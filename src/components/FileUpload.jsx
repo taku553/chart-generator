@@ -1,0 +1,300 @@
+import { useState, useCallback } from 'react'
+import { Button } from '@/components/ui/button.jsx'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
+import { Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { parseCSVFile, transformDataForChart, formatFileSize } from '@/lib/dataUtils.js'
+
+export function FileUpload({ onDataLoaded }) {
+  const [file, setFile] = useState(null)
+  const [rawData, setRawData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [xColumn, setXColumn] = useState('')
+  const [yColumn, setYColumn] = useState('')
+  const [dragActive, setDragActive] = useState(false)
+
+  // ドラッグ&ドロップ処理
+  const handleDrag = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true)
+    } else if (e.type === "dragleave") {
+      setDragActive(false)
+    }
+  }, [])
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelection(e.dataTransfer.files[0])
+    }
+  }, [])
+
+  // ファイル選択処理
+  const handleFileSelection = async (selectedFile) => {
+    if (!selectedFile) return
+
+    // ファイル形式チェック
+    const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+    const fileExtension = selectedFile.name.toLowerCase().split('.').pop()
+    
+    if (!allowedTypes.includes(selectedFile.type) && !['csv', 'xlsx', 'xls'].includes(fileExtension)) {
+      setError('サポートされていないファイル形式です。CSV、Excel形式のファイルをアップロードしてください。')
+      return
+    }
+
+    setFile(selectedFile)
+    setError(null)
+    setLoading(true)
+
+    try {
+      const parsedData = await parseCSVFile(selectedFile)
+      setRawData(parsedData)
+      
+      // デフォルトで最初の2列を選択
+      if (parsedData.headers.length >= 2) {
+        setXColumn(parsedData.headers[0])
+        setYColumn(parsedData.headers[1])
+      }
+    } catch (err) {
+      setError(err.message)
+      setFile(null)
+      setRawData(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ファイル入力変更処理
+  const handleFileInputChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileSelection(e.target.files[0])
+    }
+  }
+
+  // グラフ生成処理
+  const handleGenerateChart = () => {
+    if (!rawData || !xColumn || !yColumn) return
+
+    try {
+      const chartData = transformDataForChart(rawData, xColumn, yColumn)
+      onDataLoaded(chartData)
+    } catch (err) {
+      setError('グラフデータの変換中にエラーが発生しました')
+    }
+  }
+
+  // リセット処理
+  const handleReset = () => {
+    setFile(null)
+    setRawData(null)
+    setXColumn('')
+    setYColumn('')
+    setError(null)
+    // ファイル入力をリセット
+    const fileInput = document.getElementById('file-input')
+    if (fileInput) fileInput.value = ''
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* ファイルアップロードエリア */}
+      <Card className="glass-card fade-in stagger-animation float-animation">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl mb-2">データファイルをアップロード</CardTitle>
+          <CardDescription className="text-lg">
+            縦軸と横軸のデータを含むCSVファイルをアップロードしてください
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div 
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ripple ${
+              dragActive 
+                ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 upload-area-active' 
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <Upload className={`mx-auto h-12 w-12 mb-4 transition-colors ${
+              dragActive ? 'text-blue-500' : 'text-gray-400'
+            }`} />
+            <div className="space-y-2">
+              <p className="text-lg font-medium">
+                {dragActive ? 'ファイルをドロップしてください' : 'ファイルをドラッグ&ドロップ'}
+              </p>
+              <p className="text-gray-500">または</p>
+              <Button 
+                variant="outline" 
+                className="glass-button"
+                onClick={() => document.getElementById('file-input').click()}
+                disabled={loading}
+              >
+                ファイルを選択
+              </Button>
+              <input
+                id="file-input"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
+            </div>
+          </div>
+          
+          {/* ファイル情報表示 */}
+          {file && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 slide-in-right bounce-animation">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <div className="flex-1">
+                  <p className="text-green-800 dark:text-green-200 font-medium">
+                    {file.name}
+                  </p>
+                  <p className="text-green-600 dark:text-green-300 text-sm">
+                    {formatFileSize(file.size)} • {rawData?.rowCount || 0} 行のデータ
+                  </p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleReset}
+                  className="text-green-700 hover:text-green-800"
+                >
+                  削除
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* エラー表示 */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <p className="text-red-800 dark:text-red-200">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* ローディング表示 */}
+          {loading && (
+            <div className="text-center py-4 fade-in">
+              <div className="inline-flex items-center gap-2">
+                <div className="loading-spinner"></div>
+                <span className="text-gray-600 dark:text-gray-300 shimmer">ファイルを処理中...</span>
+              </div>
+            </div>
+          )}
+
+          {/* ファイル形式説明 */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              ファイル形式について
+            </h3>
+            <ul className="text-blue-800 dark:text-blue-200 space-y-1 text-sm">
+              <li>• CSV形式またはExcel形式（.xlsx, .xls）に対応</li>
+              <li>• 1行目にヘッダー（列名）を含めてください</li>
+              <li>• 最低2列のデータ（X軸、Y軸）が必要です</li>
+              <li>• 数値データは自動的に認識されます</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 列選択エリア */}
+      {rawData && (
+        <Card className="glass-card fade-in stagger-animation">
+          <CardHeader>
+            <CardTitle>軸の設定</CardTitle>
+            <CardDescription>
+              グラフの横軸（X軸）と縦軸（Y軸）に使用する列を選択してください
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">横軸（X軸）</label>
+                <Select value={xColumn} onValueChange={setXColumn}>
+                  <SelectTrigger className="glass-button">
+                    <SelectValue placeholder="列を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rawData.headers.map((header) => (
+                      <SelectItem key={header} value={header}>
+                        {header}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">縦軸（Y軸）</label>
+                <Select value={yColumn} onValueChange={setYColumn}>
+                  <SelectTrigger className="glass-button">
+                    <SelectValue placeholder="列を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rawData.headers.map((header) => (
+                      <SelectItem key={header} value={header}>
+                        {header}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* データプレビュー */}
+            {rawData.data.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        {rawData.headers.map((header) => (
+                          <th key={header} className="px-3 py-2 text-left font-medium">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rawData.data.slice(0, 3).map((row, index) => (
+                        <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
+                          {rawData.headers.map((header) => (
+                            <td key={header} className="px-3 py-2">
+                              {row[header]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <Button 
+              className="w-full glass-button" 
+              onClick={handleGenerateChart}
+              disabled={!xColumn || !yColumn}
+            >
+              グラフを生成
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
