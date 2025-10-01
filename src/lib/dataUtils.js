@@ -2,13 +2,14 @@ import Papa from 'papaparse'
 
 /**
  * CSVファイルを解析してデータを返す
+ * ヘッダーを自動で認識せず、全ての行をデータとして返す
  * @param {File} file - アップロードされたファイル
  * @returns {Promise<Object>} 解析されたデータ
  */
 export const parseCSVFile = (file) => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
-      header: true,
+      header: false, // ヘッダーを自動認識しない
       skipEmptyLines: true,
       complete: (results) => {
         if (results.errors.length > 0) {
@@ -16,23 +17,16 @@ export const parseCSVFile = (file) => {
           return
         }
         
-        const data = results.data
-        if (data.length === 0) {
+        const rawRows = results.data
+        if (rawRows.length === 0) {
           reject(new Error('ファイルにデータが含まれていません'))
           return
         }
 
-        // ヘッダーを取得
-        const headers = Object.keys(data[0])
-        if (headers.length < 2) {
-          reject(new Error('最低2列のデータが必要です'))
-          return
-        }
-
+        // 全ての行をそのまま返す
         resolve({
-          headers,
-          data,
-          rowCount: data.length
+          rawRows,
+          rowCount: rawRows.length
         })
       },
       error: (error) => {
@@ -40,6 +34,94 @@ export const parseCSVFile = (file) => {
       }
     })
   })
+}
+
+/**
+ * 指定された行をヘッダーとして、データとヘッダーを抽出する
+ * @param {Array<Array<string>>} rawRows - 生のデータ行
+ * @param {number} headerRowIndex - ヘッダーとして使用する行のインデックス (0-indexed)
+ * @returns {Object} headersとdataを含むオブジェクト
+ */
+export const extractHeadersAndData = (rawRows, headerRowIndex) => {
+  if (headerRowIndex < 0 || headerRowIndex >= rawRows.length) {
+    throw new Error('無効なヘッダー行インデックスです。')
+  }
+
+  const headers = rawRows[headerRowIndex].map(h => h ? String(h).trim() : `Column ${rawRows[headerRowIndex].indexOf(h) + 1}`)
+  const dataRows = rawRows.slice(headerRowIndex + 1)
+
+  const data = dataRows.map(row => {
+    const obj = {}
+    headers.forEach((header, index) => {
+      obj[header] = row[index] !== undefined ? String(row[index]).trim() : ''
+    })
+    return obj
+  }).filter(obj => Object.values(obj).some(val => val !== '')) // 全て空の行は除外
+
+  // ヘッダーが重複している場合はユニークにする
+  const uniqueHeaders = []
+  const headerMap = new Map()
+  headers.forEach(header => {
+    let currentHeader = header
+    let counter = 1
+    while(headerMap.has(currentHeader)) {
+      currentHeader = `${header}_${counter}`
+      counter++
+    }
+    headerMap.set(currentHeader, true)
+    uniqueHeaders.push(currentHeader)
+  })
+
+  return {
+    headers: uniqueHeaders,
+    data
+  }
+}
+
+/**
+ * ヘッダー行を自動推定する
+ * @param {Array<Array<string>>} rawRows - 生のデータ行
+ * @returns {number} 推定されたヘッダー行のインデックス
+ */
+export const inferHeaderRow = (rawRows) => {
+  if (rawRows.length === 0) return -1
+
+  // 最初の数行を分析対象とする (例: 最初の5行)
+  const sampleRows = rawRows.slice(0, Math.min(rawRows.length, 5))
+
+  let bestHeaderRowIndex = 0
+  let maxNonNumericRatio = -1
+
+  sampleRows.forEach((row, index) => {
+    if (row.length === 0) return
+
+    let nonNumericCount = 0
+    row.forEach(cell => {
+      const cleanedCell = String(cell).trim()
+      if (cleanedCell === '' || isNaN(Number(cleanedCell))) {
+        nonNumericCount++
+      }
+    })
+
+    const nonNumericRatio = nonNumericCount / row.length
+
+    // 非数値の割合が高い行をヘッダー候補とする
+    // また、最初の行はヘッダーである可能性が高いので優先する
+    if (nonNumericRatio > maxNonNumericRatio || (index === 0 && nonNumericRatio >= 0.5)) {
+      maxNonNumericRatio = nonNumericRatio
+      bestHeaderRowIndex = index
+    }
+  })
+
+  // 非数値の割合が低い（ほとんど数値）場合は、ヘッダーではない可能性が高いので、
+  // その次の行をヘッダーとして推定するなどのロジックも考えられるが、
+  // ここでは最も非数値が多い行をヘッダーと推定するシンプルなロジックを採用
+  // ただし、全ての行が数値のみの場合、最初の行をヘッダーとする
+  if (maxNonNumericRatio === 0 && rawRows.length > 1) {
+    return 0 // 全て数値の場合は最初の行をヘッダーとする
+  }
+
+  return bestHeaderRowIndex
 }
 
 /**
@@ -91,8 +173,8 @@ export const inferDataType = (values) => {
  * @param {string} yColumn - Y軸の列名
  * @returns {Object} グラフ用データ
  */
-export const transformDataForChart = (rawData, xColumn, yColumn) => {
-  const { data } = rawData
+export const transformDataForChart = (processedData, xColumn, yColumn) => {
+  const { data } = processedData
   
   // X軸とY軸のデータを抽出
   const xValues = data.map(row => row[xColumn])

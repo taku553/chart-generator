@@ -1,18 +1,41 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
-import { Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { parseCSVFile, transformDataForChart, formatFileSize } from '@/lib/dataUtils.js'
+import { Upload, FileText, AlertCircle, CheckCircle2, ChevronDown } from 'lucide-react'
+import { parseCSVFile, extractHeadersAndData, inferHeaderRow, transformDataForChart, formatFileSize } from '@/lib/dataUtils.js'
 
 export function FileUpload({ onDataLoaded }) {
   const [file, setFile] = useState(null)
-  const [rawData, setRawData] = useState(null)
+  const [rawRows, setRawRows] = useState(null) // 生の行データ
+  const [processedData, setProcessedData] = useState(null) // ヘッダー抽出後のデータ
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [headerRowIndex, setHeaderRowIndex] = useState(null) // ユーザーが選択したヘッダー行のインデックス
   const [xColumn, setXColumn] = useState('')
   const [yColumn, setYColumn] = useState('')
   const [dragActive, setDragActive] = useState(false)
+
+  // ヘッダー行が変更されたときにデータを再処理
+  useEffect(() => {
+    if (rawRows && headerRowIndex !== null) {
+      try {
+        const { headers, data } = extractHeadersAndData(rawRows, headerRowIndex)
+        setProcessedData({ headers, data, rowCount: data.length })
+        // ヘッダーが変更されたら、X/Y軸の選択をリセットまたは再設定
+        if (headers.length >= 2) {
+          setXColumn(headers[0])
+          setYColumn(headers[1])
+        } else {
+          setXColumn('')
+          setYColumn('')
+        }
+      } catch (err) {
+        setError(err.message)
+        setProcessedData(null)
+      }
+    }
+  }, [rawRows, headerRowIndex])
 
   // ドラッグ&ドロップ処理
   const handleDrag = useCallback((e) => {
@@ -51,20 +74,25 @@ export function FileUpload({ onDataLoaded }) {
     setFile(selectedFile)
     setError(null)
     setLoading(true)
+    setRawRows(null)
+    setProcessedData(null)
+    setHeaderRowIndex(null)
+    setXColumn('')
+    setYColumn('')
 
     try {
       const parsedData = await parseCSVFile(selectedFile)
-      setRawData(parsedData)
+      setRawRows(parsedData.rawRows)
       
-      // デフォルトで最初の2列を選択
-      if (parsedData.headers.length >= 2) {
-        setXColumn(parsedData.headers[0])
-        setYColumn(parsedData.headers[1])
-      }
+      // ヘッダー行を自動推定
+      const inferredIndex = inferHeaderRow(parsedData.rawRows)
+      setHeaderRowIndex(inferredIndex)
+
     } catch (err) {
       setError(err.message)
       setFile(null)
-      setRawData(null)
+      setRawRows(null)
+      setProcessedData(null)
     } finally {
       setLoading(false)
     }
@@ -79,10 +107,10 @@ export function FileUpload({ onDataLoaded }) {
 
   // グラフ生成処理
   const handleGenerateChart = () => {
-    if (!rawData || !xColumn || !yColumn) return
+    if (!processedData || !xColumn || !yColumn) return
 
     try {
-      const chartData = transformDataForChart(rawData, xColumn, yColumn)
+      const chartData = transformDataForChart(processedData, xColumn, yColumn)
       onDataLoaded(chartData)
     } catch (err) {
       setError('グラフデータの変換中にエラーが発生しました')
@@ -92,7 +120,9 @@ export function FileUpload({ onDataLoaded }) {
   // リセット処理
   const handleReset = () => {
     setFile(null)
-    setRawData(null)
+    setRawRows(null)
+    setProcessedData(null)
+    setHeaderRowIndex(null)
     setXColumn('')
     setYColumn('')
     setError(null)
@@ -159,7 +189,7 @@ export function FileUpload({ onDataLoaded }) {
                     {file.name}
                   </p>
                   <p className="text-green-600 dark:text-green-300 text-sm">
-                    {formatFileSize(file.size)} • {rawData?.rowCount || 0} 行のデータ
+                    {formatFileSize(file.size)} • {rawRows?.length || 0} 行のデータ
                   </p>
                 </div>
                 <Button 
@@ -210,8 +240,68 @@ export function FileUpload({ onDataLoaded }) {
         </CardContent>
       </Card>
 
+      {/* ヘッダー行選択とデータプレビュー */}
+      {rawRows && rawRows.length > 0 && (
+        <Card className="glass-card fade-in stagger-animation">
+          <CardHeader>
+            <CardTitle>ヘッダー行の選択とデータプレビュー</CardTitle>
+            <CardDescription>
+              グラフの列名として使用する行を選択してください。自動推定された行が選択されています。
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">ヘッダー行</label>
+              <Select value={headerRowIndex !== null ? String(headerRowIndex) : ''} onValueChange={(value) => setHeaderRowIndex(Number(value))}>
+                <SelectTrigger className="glass-button">
+                  <SelectValue placeholder="ヘッダー行を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rawRows.slice(0, Math.min(rawRows.length, 10)).map((row, index) => (
+                    <SelectItem key={index} value={String(index)}>
+                      行 {index + 1}: {row.join(', ').substring(0, 50)}{row.join(', ').length > 50 ? '...' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* データプレビュー */}
+            {processedData && processedData.data.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        {processedData.headers.map((header) => (
+                          <th key={header} className="px-3 py-2 text-left font-medium">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {processedData.data.slice(0, 3).map((row, index) => (
+                        <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
+                          {processedData.headers.map((header) => (
+                            <td key={header} className="px-3 py-2">
+                              {row[header]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* 列選択エリア */}
-      {rawData && (
+      {processedData && processedData.headers.length >= 2 && (
         <Card className="glass-card fade-in stagger-animation">
           <CardHeader>
             <CardTitle>軸の設定</CardTitle>
@@ -228,7 +318,7 @@ export function FileUpload({ onDataLoaded }) {
                     <SelectValue placeholder="列を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    {rawData.headers.map((header) => (
+                    {processedData.headers.map((header) => (
                       <SelectItem key={header} value={header}>
                         {header}
                       </SelectItem>
@@ -244,7 +334,7 @@ export function FileUpload({ onDataLoaded }) {
                     <SelectValue placeholder="列を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    {rawData.headers.map((header) => (
+                    {processedData.headers.map((header) => (
                       <SelectItem key={header} value={header}>
                         {header}
                       </SelectItem>
@@ -253,37 +343,6 @@ export function FileUpload({ onDataLoaded }) {
                 </Select>
               </div>
             </div>
-
-            {/* データプレビュー */}
-            {rawData.data.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        {rawData.headers.map((header) => (
-                          <th key={header} className="px-3 py-2 text-left font-medium">
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rawData.data.slice(0, 3).map((row, index) => (
-                        <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
-                          {rawData.headers.map((header) => (
-                            <td key={header} className="px-3 py-2">
-                              {row[header]}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
 
             <Button 
               className="w-full glass-button" 
