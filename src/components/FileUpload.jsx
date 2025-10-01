@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { Upload, FileText, AlertCircle, CheckCircle2, ChevronDown, Table } from 'lucide-react'
-import { parseCSVFile, extractHeadersAndData, inferHeaderRow, transformDataForChart, formatFileSize } from '@/lib/dataUtils.js'
+import { parseFile, extractHeadersAndData, inferHeaderRow, transformDataForChart, formatFileSize } from '@/lib/dataUtils.js'
 
 export function FileUpload({ onDataLoaded }) {
   const [file, setFile] = useState(null)
@@ -45,7 +45,7 @@ export function FileUpload({ onDataLoaded }) {
       try {
         const response = await fetch('/sample-good-data.csv')
         const text = await response.text()
-        const parsed = await parseCSVFile(new File([text], 'sample-good-data.csv', { type: 'text/csv' }))
+        const parsed = await parseFile(new File([text], 'sample-good-data.csv', { type: 'text/csv' }))
         const inferredIndex = inferHeaderRow(parsed.rawRows)
         const { headers, data } = extractHeadersAndData(parsed.rawRows, inferredIndex)
         setSampleData({ headers, data })
@@ -81,15 +81,6 @@ export function FileUpload({ onDataLoaded }) {
   const handleFileSelection = async (selectedFile) => {
     if (!selectedFile) return
 
-    // ファイル形式チェック
-    const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-    const fileExtension = selectedFile.name.toLowerCase().split('.').pop()
-    
-    if (!allowedTypes.includes(selectedFile.type) && !['csv', 'xlsx', 'xls'].includes(fileExtension)) {
-      setError('サポートされていないファイル形式です。CSV、Excel形式のファイルをアップロードしてください。')
-      return
-    }
-
     setFile(selectedFile)
     setError(null)
     setLoading(true)
@@ -100,7 +91,7 @@ export function FileUpload({ onDataLoaded }) {
     setYColumn('')
 
     try {
-      const parsedData = await parseCSVFile(selectedFile)
+      const parsedData = await parseFile(selectedFile)
       setRawRows(parsedData.rawRows)
       
       // ヘッダー行を自動推定

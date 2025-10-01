@@ -1,38 +1,74 @@
 import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 
 /**
- * CSVファイルを解析してデータを返す
+ * ファイルを解析してデータを返す (CSV/Excel対応)
  * ヘッダーを自動で認識せず、全ての行をデータとして返す
  * @param {File} file - アップロードされたファイル
  * @returns {Promise<Object>} 解析されたデータ
  */
-export const parseCSVFile = (file) => {
+export const parseFile = (file) => {
   return new Promise((resolve, reject) => {
-    Papa.parse(file, {
-      header: false, // ヘッダーを自動認識しない
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          reject(new Error('CSVファイルの解析中にエラーが発生しました'))
-          return
-        }
-        
-        const rawRows = results.data
-        if (rawRows.length === 0) {
-          reject(new Error('ファイルにデータが含まれていません'))
-          return
-        }
+    const reader = new FileReader()
 
-        // 全ての行をそのまま返す
-        resolve({
-          rawRows,
-          rowCount: rawRows.length
+    reader.onload = (e) => {
+      const data = e.target.result
+      const fileExtension = file.name.toLowerCase().split('.').pop()
+
+      if (fileExtension === 'csv') {
+        Papa.parse(file, {
+          header: false, // ヘッダーを自動認識しない
+          skipEmptyLines: true,
+          complete: (results) => {
+            if (results.errors.length > 0) {
+              reject(new Error('CSVファイルの解析中にエラーが発生しました'))
+              return
+            }
+            const rawRows = results.data
+            if (rawRows.length === 0) {
+              reject(new Error('ファイルにデータが含まれていません'))
+              return
+            }
+            resolve({ rawRows, rowCount: rawRows.length })
+          },
+          error: (error) => {
+            reject(new Error('ファイルの読み込みに失敗しました'))
+          }
         })
-      },
-      error: (error) => {
-        reject(new Error('ファイルの読み込みに失敗しました'))
+      } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+        try {
+          const workbook = XLSX.read(data, { type: 'array' })
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+          const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: "" })
+
+          if (rawRows.length === 0) {
+            reject(new Error('ファイルにデータが含まれていません'))
+            return
+          }
+          resolve({ rawRows, rowCount: rawRows.length })
+        } catch (err) {
+          reject(new Error('Excelファイルの解析中にエラーが発生しました: ' + err.message))
+        }
+      } else {
+        reject(new Error('サポートされていないファイル形式です。CSV、Excel形式のファイルをアップロードしてください。'))
       }
-    })
+    }
+
+    reader.onerror = (error) => {
+      reject(new Error('ファイルの読み込みに失敗しました'))
+    }
+
+    // ファイルタイプに応じて読み込み方法を変更
+    const fileExtension = file.name.toLowerCase().split('.').pop()
+    if (fileExtension === 'csv') {
+      reader.readAsText(file) // CSVはテキストとして読み込む
+    } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+      reader.readAsArrayBuffer(file) // ExcelはArrayBufferとして読み込む
+    } else {
+      reject(new Error('サポートされていないファイル形式です。CSV、Excel形式のファイルをアップロードしてください。'))
+      return // reject後に処理を終了
+    }
   })
 }
 
