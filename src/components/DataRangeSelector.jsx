@@ -1,0 +1,206 @@
+import { useState, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ChevronDown, Table2 } from 'lucide-react'
+import { extractDataRange } from '@/lib/dataTransform'
+
+export function DataRangeSelector({ rawRows, onRangeSelect }) {
+  const [startRow, setStartRow] = useState(0)
+  const [endRow, setEndRow] = useState(Math.min(rawRows.length - 1, 19))
+  const [startCol, setStartCol] = useState(0)
+  const [endCol, setEndCol] = useState(Math.min(rawRows[0]?.length - 1 || 0, 25))
+  const [displayRows, setDisplayRows] = useState(20) // 表示する行数
+
+  // 表示用のデータ
+  const visibleRows = useMemo(() => {
+    return rawRows.slice(0, displayRows)
+  }, [rawRows, displayRows])
+
+  // さらに表示ボタン
+  const handleShowMore = () => {
+    setDisplayRows(prev => Math.min(prev + 50, rawRows.length))
+  }
+
+  // 列名を生成（A, B, C, ...）
+  const getColumnLabel = (index) => {
+    let label = ''
+    let num = index
+    while (num >= 0) {
+      label = String.fromCharCode(65 + (num % 26)) + label
+      num = Math.floor(num / 26) - 1
+    }
+    return label
+  }
+
+  // 範囲確定
+  const handleConfirm = () => {
+    const selectedData = extractDataRange(rawRows, {
+      startRow,
+      endRow,
+      startCol,
+      endCol
+    })
+    
+    onRangeSelect({
+      data: selectedData,
+      range: { startRow, endRow, startCol, endCol }
+    })
+  }
+
+  // セルが選択範囲内かどうか
+  const isCellInRange = (rowIndex, colIndex) => {
+    return rowIndex >= startRow && 
+           rowIndex <= endRow && 
+           colIndex >= startCol && 
+           colIndex <= endCol
+  }
+
+  return (
+    <Card className="glass-card fade-in">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Table2 className="h-5 w-5" />
+          データ領域を選択
+        </CardTitle>
+        <CardDescription>
+          グラフ化したいデータの範囲を指定してください。青色でハイライトされた領域が選択されます。
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* 範囲指定コントロール */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label>開始行</Label>
+            <Input
+              type="number"
+              value={startRow}
+              onChange={(e) => setStartRow(Math.max(0, Math.min(Number(e.target.value), rawRows.length - 1)))}
+              min={0}
+              max={rawRows.length - 1}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>終了行</Label>
+            <Input
+              type="number"
+              value={endRow}
+              onChange={(e) => setEndRow(Math.max(startRow, Math.min(Number(e.target.value), rawRows.length - 1)))}
+              min={startRow}
+              max={rawRows.length - 1}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>開始列（A=0）</Label>
+            <Input
+              type="number"
+              value={startCol}
+              onChange={(e) => setStartCol(Math.max(0, Math.min(Number(e.target.value), rawRows[0]?.length - 1 || 0)))}
+              min={0}
+              max={rawRows[0]?.length - 1 || 0}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>終了列（A=0）</Label>
+            <Input
+              type="number"
+              value={endCol}
+              onChange={(e) => setEndCol(Math.max(startCol, Math.min(Number(e.target.value), rawRows[0]?.length - 1 || 0)))}
+              min={startCol}
+              max={rawRows[0]?.length - 1 || 0}
+            />
+          </div>
+        </div>
+
+        {/* 選択範囲の情報 */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="text-sm">
+            <span className="font-semibold">選択範囲：</span>
+            {` ${getColumnLabel(startCol)}${startRow + 1}:${getColumnLabel(endCol)}${endRow + 1}`}
+            {` （${endRow - startRow + 1}行 × ${endCol - startCol + 1}列）`}
+          </div>
+        </div>
+
+        {/* プレビューテーブル */}
+        <div className="space-y-2">
+          <Label>データプレビュー</Label>
+          <div className="overflow-auto max-h-96 border rounded-lg shadow-inner">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10">
+                <tr>
+                  <th className="border p-2 text-xs font-medium bg-gray-200 dark:bg-gray-700">
+                    行
+                  </th>
+                  {visibleRows[0]?.map((_, colIndex) => (
+                    <th 
+                      key={colIndex} 
+                      className={`
+                        border p-2 text-xs font-medium
+                        ${colIndex >= startCol && colIndex <= endCol
+                          ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-400'
+                          : 'bg-gray-200 dark:bg-gray-700'}
+                      `}
+                    >
+                      {getColumnLabel(colIndex)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {visibleRows.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    <td 
+                      className={`
+                        border p-2 text-xs font-medium bg-gray-100 dark:bg-gray-800 sticky left-0
+                        ${rowIndex >= startRow && rowIndex <= endRow
+                          ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-400'
+                          : ''}
+                      `}
+                    >
+                      {rowIndex + 1}
+                    </td>
+                    {row.map((cell, colIndex) => (
+                      <td
+                        key={colIndex}
+                        className={`
+                          border p-2 whitespace-nowrap text-xs
+                          ${isCellInRange(rowIndex, colIndex)
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 font-semibold'
+                            : 'border-gray-200 dark:border-gray-700'}
+                        `}
+                      >
+                        {cell !== null && cell !== undefined ? String(cell) : ''}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* さらに表示ボタン */}
+          {displayRows < rawRows.length && (
+            <Button 
+              variant="outline" 
+              className="w-full mt-2"
+              onClick={handleShowMore}
+            >
+              <ChevronDown className="h-4 w-4 mr-2" />
+              さらに表示（残り{rawRows.length - displayRows}行）
+            </Button>
+          )}
+        </div>
+
+        {/* 確定ボタン */}
+        <Button 
+          onClick={handleConfirm} 
+          className="w-full glass-button"
+          size="lg"
+        >
+          この範囲を使用してグラフを作成
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
