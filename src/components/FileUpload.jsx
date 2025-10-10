@@ -3,45 +3,27 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { Upload, FileText, AlertCircle, CheckCircle2, Table } from 'lucide-react'
-import { parseFile, extractHeadersAndData, inferHeaderRow, transformDataForChart } from '@/lib/dataUtils.js'
+import { parseFile, transformDataForChart } from '@/lib/dataUtils.js'
 import { processSelectedRange } from '@/lib/dataTransform.js'
 import { DataRangeSelector } from '@/components/DataRangeSelector.jsx'
 import { DataOrientationSelector } from '@/components/DataOrientationSelector.jsx'
+import { HeaderRangeSelector } from '@/components/HeaderRangeSelector.jsx'
 
 export function FileUpload({ onDataLoaded }) {
   const [file, setFile] = useState(null)
   const [rawRows, setRawRows] = useState(null)
-  const [selectedRange, setSelectedRange] = useState(null) // 新規
-  const [orientationConfirmed, setOrientationConfirmed] = useState(false) // 新規
+  const [selectedRange, setSelectedRange] = useState(null)
+  const [orientationConfirmed, setOrientationConfirmed] = useState(false)
+  const [processedDataForHeader, setProcessedDataForHeader] = useState(null)
+  const [headerRangeConfirmed, setHeaderRangeConfirmed] = useState(false)
   const [processedData, setProcessedData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [headerRowIndex, setHeaderRowIndex] = useState(null)
   const [xColumn, setXColumn] = useState('')
   const [yColumn, setYColumn] = useState('')
   const [dragActive, setDragActive] = useState(false)
   const [showSampleData, setShowSampleData] = useState(false)
   const [sampleData, setSampleData] = useState(null)
-
-  // ヘッダー行が変更されたときにデータを再処理
-  useEffect(() => {
-    if (rawRows && headerRowIndex !== null && orientationConfirmed) {
-      try {
-        const { headers, data } = extractHeadersAndData(rawRows, headerRowIndex)
-        setProcessedData({ headers, data, rowCount: data.length })
-        if (headers.length >= 2) {
-          setXColumn(headers[0])
-          setYColumn(headers[1])
-        } else {
-          setXColumn('')
-          setYColumn('')
-        }
-      } catch (err) {
-        setError(err.message)
-        setProcessedData(null)
-      }
-    }
-  }, [rawRows, headerRowIndex, orientationConfirmed])
 
   // サンプルデータを読み込む
   useEffect(() => {
@@ -50,8 +32,15 @@ export function FileUpload({ onDataLoaded }) {
         const response = await fetch('/sample-good-data.csv')
         const text = await response.text()
         const parsed = await parseFile(new File([text], 'sample-good-data.csv', { type: 'text/csv' }))
-        const inferredIndex = inferHeaderRow(parsed.rawRows)
-        const { headers, data } = extractHeadersAndData(parsed.rawRows, inferredIndex)
+        // サンプルデータは標準形式なので、1行目をヘッダーとして使用
+        const headers = parsed.rawRows[0].map(h => String(h || '').trim())
+        const data = parsed.rawRows.slice(1).map(row => {
+          const rowData = {}
+          headers.forEach((header, index) => {
+            rowData[header] = row[index] || ''
+          })
+          return rowData
+        })
         setSampleData({ headers, data })
       } catch (err) {
         console.error('サンプルデータの読み込みに失敗しました:', err)
@@ -91,8 +80,9 @@ export function FileUpload({ onDataLoaded }) {
     setRawRows(null)
     setSelectedRange(null)
     setOrientationConfirmed(false)
+    setProcessedDataForHeader(null)
+    setHeaderRangeConfirmed(false)
     setProcessedData(null)
-    setHeaderRowIndex(null)
     setXColumn('')
     setYColumn('')
 
@@ -115,12 +105,12 @@ export function FileUpload({ onDataLoaded }) {
     }
   }
 
-  // データ領域選択後の処理（新規）
+  // データ領域選択後の処理
   const handleRangeSelect = ({ data, range }) => {
     setSelectedRange({ data, range })
   }
 
-  // データ向き確認後の処理（新規）
+  // データ向き確認後の処理
   const handleOrientationSelect = (orientation) => {
     const shouldTranspose = orientation === 'transpose'
     const processed = processSelectedRange({
@@ -128,13 +118,70 @@ export function FileUpload({ onDataLoaded }) {
       shouldTranspose
     })
     
-    // 処理済みデータを設定
-    setRawRows(processed)
+    // 処理済みデータをヘッダー選択用に設定
+    setProcessedDataForHeader(processed)
     setOrientationConfirmed(true)
+  }
+
+  // ヘッダー領域確定後の処理（NEW）
+  const handleHeaderRangeConfirm = ({ headers, data, headerRange }) => {
+    console.log('====================')
+    console.log('=== Header Range Confirm ===')
+    console.log('====================')
+    console.log('Headers:', headers)
+    console.log('Number of headers:', headers.length)
+    console.log('Data rows count:', data.length)
+    console.log('Data (first 3 rows - raw array):')
+    data.slice(0, 3).forEach((row, i) => {
+      console.log(`  Row ${i}:`, row)
+      console.log(`  Row ${i} length:`, row.length)
+    })
     
-    // ヘッダー行を自動推定
-    const inferredIndex = inferHeaderRow(processed)
-    setHeaderRowIndex(inferredIndex)
+    // ヘッダーとデータを設定
+    // 各行の長さをヘッダーの長さに合わせる
+    const formattedData = data.map((row, rowIndex) => {
+      const rowData = {}
+      
+      // 行の長さをヘッダーの長さに合わせて処理
+      headers.forEach((header, colIndex) => {
+        // row[colIndex]が存在する場合はその値、なければ空文字
+        const value = colIndex < row.length ? row[colIndex] : ''
+        rowData[header] = value !== null && value !== undefined ? value : ''
+      })
+      
+      if (rowIndex < 3) {
+        console.log(`Converted Row ${rowIndex} to object:`)
+        console.log(`  Keys:`, Object.keys(rowData))
+        console.log(`  Values:`, Object.values(rowData))
+        console.log(`  Full object:`, rowData)
+      }
+      
+      return rowData
+    })
+    
+    console.log('---')
+    console.log('Formatted data (first 3 rows):')
+    formattedData.slice(0, 3).forEach((row, i) => {
+      console.log(`  Row ${i}:`, row)
+    })
+    console.log('====================')
+    
+    setProcessedData({ 
+      headers, 
+      data: formattedData,
+      rowCount: formattedData.length 
+    })
+    
+    setHeaderRangeConfirmed(true)
+    
+    // デフォルトでX軸とY軸を設定
+    if (headers.length >= 2) {
+      console.log('Setting default columns:')
+      console.log('  X-axis:', headers[0])
+      console.log('  Y-axis:', headers[headers.length - 1]) // 最後の列をY軸に
+      setXColumn(headers[0])
+      setYColumn(headers[headers.length - 1])
+    }
   }
 
   // グラフ生成処理
@@ -155,8 +202,9 @@ export function FileUpload({ onDataLoaded }) {
     setRawRows(null)
     setSelectedRange(null)
     setOrientationConfirmed(false)
+    setProcessedDataForHeader(null)
+    setHeaderRangeConfirmed(false)
     setProcessedData(null)
-    setHeaderRowIndex(null)
     setXColumn('')
     setYColumn('')
     setError(null)
@@ -274,7 +322,7 @@ export function FileUpload({ onDataLoaded }) {
         </div>
       )}
 
-      {/* データ領域選択（新規） */}
+      {/* データ領域選択 */}
       {rawRows && !selectedRange && !loading && (
         <DataRangeSelector 
           rawRows={rawRows}
@@ -282,7 +330,7 @@ export function FileUpload({ onDataLoaded }) {
         />
       )}
 
-      {/* データ向き確認（新規） */}
+      {/* データ向き確認 */}
       {selectedRange && !orientationConfirmed && (
         <DataOrientationSelector
           selectedData={selectedRange.data}
@@ -290,68 +338,16 @@ export function FileUpload({ onDataLoaded }) {
         />
       )}
 
-      {/* ヘッダー行選択（既存） */}
-      {orientationConfirmed && rawRows && rawRows.length > 0 && (
-        <Card className="glass-card fade-in stagger-animation">
-          <CardHeader>
-            <CardTitle>ヘッダー行の選択</CardTitle>
-            <CardDescription>
-              グラフの列名として使用する行を選択してください。自動推定された行が選択されています。
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">ヘッダー行</label>
-              <Select value={headerRowIndex !== null ? String(headerRowIndex) : ''} onValueChange={(value) => setHeaderRowIndex(Number(value))}>
-                <SelectTrigger className="glass-button">
-                  <SelectValue placeholder="ヘッダー行を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rawRows.slice(0, Math.min(rawRows.length, 10)).map((row, index) => (
-                    <SelectItem key={index} value={String(index)}>
-                      行 {index + 1}: {row.join(', ').substring(0, 50)}{row.join(', ').length > 50 ? '...' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* データプレビュー */}
-            {processedData && processedData.data.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        {processedData.headers.map((header) => (
-                          <th key={header} className="px-3 py-2 text-left font-medium">
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {processedData.data.slice(0, 3).map((row, index) => (
-                        <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
-                          {processedData.headers.map((header) => (
-                            <td key={header} className="px-3 py-2">
-                              {row[header]}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* ヘッダー領域選択（NEW） */}
+      {orientationConfirmed && processedDataForHeader && !headerRangeConfirmed && (
+        <HeaderRangeSelector
+          processedData={processedDataForHeader}
+          onHeaderRangeConfirm={handleHeaderRangeConfirm}
+        />
       )}
 
-      {/* 列選択エリア（既存） */}
-      {processedData && processedData.headers.length >= 2 && (
+      {/* 列選択エリア */}
+      {headerRangeConfirmed && processedData && processedData.headers.length >= 2 && (
         <Card className="glass-card fade-in stagger-animation">
           <CardHeader>
             <CardTitle>軸の設定</CardTitle>
@@ -394,6 +390,37 @@ export function FileUpload({ onDataLoaded }) {
               </div>
             </div>
 
+            {/* データプレビュー */}
+            {processedData && processedData.data.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        {processedData.headers.map((header) => (
+                          <th key={header} className="px-3 py-2 text-left font-medium">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {processedData.data.slice(0, 3).map((row, index) => (
+                        <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
+                          {processedData.headers.map((header) => (
+                            <td key={header} className="px-3 py-2">
+                              {row[header]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             <Button 
               className="w-full glass-button" 
               onClick={handleGenerateChart}
@@ -405,7 +432,7 @@ export function FileUpload({ onDataLoaded }) {
         </Card>
       )}
 
-      {/* サンプルデータ表示エリア（既存） */}
+      {/* サンプルデータ表示エリア */}
       <Card className="glass-card fade-in stagger-animation">
         <CardHeader>
           <CardTitle>グラフ作成に最適なデータ構成の例</CardTitle>

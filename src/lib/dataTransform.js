@@ -79,3 +79,92 @@ export const extractDataRange = (rawRows, { startRow, endRow, startCol, endCol }
   
   return extractedData
 }
+
+/**
+ * 複数行からヘッダーを結合する
+ * @param {Array<Array<any>>} data - データ
+ * @param {number} headerStartRow - ヘッダー開始行（0始まり）
+ * @param {number} headerEndRow - ヘッダー終了行（0始まり）
+ * @returns {Array<string>} 結合されたヘッダー配列
+ */
+export const mergeHeaderRows = (data, headerStartRow, headerEndRow) => {
+  if (!data || data.length === 0) return []
+  if (headerStartRow > headerEndRow) return []
+  if (headerEndRow >= data.length) return []
+  
+  const numColumns = Math.max(...data.slice(headerStartRow, headerEndRow + 1).map(row => row.length))
+  const headers = []
+  
+  for (let colIndex = 0; colIndex < numColumns; colIndex++) {
+    const headerParts = []
+    
+    for (let rowIndex = headerStartRow; rowIndex <= headerEndRow; rowIndex++) {
+      const cell = data[rowIndex]?.[colIndex]
+      const cellValue = String(cell || '').trim()
+      
+      if (cellValue !== '') {
+        headerParts.push(cellValue)
+      }
+    }
+    
+    // 結合：空でない部分をスペースで連結
+    const mergedHeader = headerParts.length > 0 
+      ? headerParts.join(' ') 
+      : `Column ${colIndex + 1}`
+    
+    headers.push(mergedHeader)
+  }
+  
+  return headers
+}
+
+/**
+ * ヘッダー領域とデータ領域を分けて抽出する
+ * @param {Array<Array<any>>} data - 全データ
+ * @param {number} headerStartRow - ヘッダー開始行
+ * @param {number} headerEndRow - ヘッダー終了行
+ * @param {number} dataStartRow - データ開始行
+ * @returns {Object} { headers: Array<string>, data: Array<Array<any>> }
+ */
+export const extractHeadersAndDataRows = (data, headerStartRow, headerEndRow, dataStartRow) => {
+  if (!data || data.length === 0) {
+    return { headers: [], data: [] }
+  }
+  
+  // ヘッダーを結合
+  const headers = mergeHeaderRows(data, headerStartRow, headerEndRow)
+  const numColumns = headers.length
+  
+  console.log('=== extractHeadersAndDataRows ===')
+  console.log('Headers:', headers)
+  console.log('Number of columns:', numColumns)
+  
+  // データ行を抽出（ヘッダーと同じ列数に揃える）
+  const dataRows = []
+  for (let rowIndex = dataStartRow; rowIndex < data.length; rowIndex++) {
+    const row = data[rowIndex]
+    
+    // 完全に空の行はスキップ
+    if (!row || !row.some(cell => String(cell || '').trim() !== '')) {
+      continue
+    }
+    
+    // 行の長さをヘッダーの列数に合わせる
+    const normalizedRow = []
+    for (let colIndex = 0; colIndex < numColumns; colIndex++) {
+      const value = colIndex < row.length ? row[colIndex] : ''
+      normalizedRow.push(value !== null && value !== undefined ? value : '')
+    }
+    
+    dataRows.push(normalizedRow)
+    
+    // デバッグ用：最初の3行のみログ出力
+    if (dataRows.length <= 3) {
+      console.log(`Data row ${dataRows.length}:`, normalizedRow)
+    }
+  }
+  
+  console.log(`Total data rows extracted: ${dataRows.length}`)
+  
+  return { headers, data: dataRows }
+}

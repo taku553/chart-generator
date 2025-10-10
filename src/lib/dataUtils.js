@@ -173,7 +173,7 @@ export const parseNumericValue = (value) => {
   if (!value || value.trim() === '') return 0
   
   // カンマを除去
-  const cleanValue = value.replace(/,/g, '')
+  const cleanValue = value.replace(/[\s,]/g, '')
   
   // 数値に変換を試行
   const numValue = parseFloat(cleanValue)
@@ -204,28 +204,78 @@ export const inferDataType = (values) => {
 
 /**
  * グラフ用にデータを変換する
- * @param {Object} rawData - 生データ
+ * @param {Object} processedData - 生データ
  * @param {string} xColumn - X軸の列名
  * @param {string} yColumn - Y軸の列名
  * @returns {Object} グラフ用データ
  */
 export const transformDataForChart = (processedData, xColumn, yColumn) => {
+  console.log('====================')
+  console.log('=== transformDataForChart START ===')
+  console.log('====================')
+  console.log('xColumn:', xColumn)
+  console.log('yColumn:', yColumn)
+  console.log('processedData.headers:', processedData.headers)
+  console.log('processedData.data.length:', processedData.data.length)
+  
   const { data } = processedData
+  
+  console.log('First 3 data rows (full objects):')
+  data.slice(0, 3).forEach((row, i) => {
+    console.log(`Row ${i}:`, row)
+    console.log(`  ${xColumn} = "${row[xColumn]}"`)
+    console.log(`  ${yColumn} = "${row[yColumn]}"`)
+  })
   
   // X軸とY軸のデータを抽出
   const xValues = data.map(row => row[xColumn])
   const yValues = data.map(row => row[yColumn])
   
+  console.log('---')
+  console.log('xValues (first 5):', xValues.slice(0, 5))
+  console.log('yValues (first 5):', yValues.slice(0, 5))
+  
   // データ型を推定
   const xType = inferDataType(xValues)
   const yType = inferDataType(yValues)
   
+  console.log('---')
+  console.log('xType:', xType)
+  console.log('yType:', yType)
+  
   // グラフ用にデータを変換
-  const chartData = data.map(row => ({
-    x: xType === 'numeric' ? parseNumericValue(row[xColumn]) : row[xColumn],
-    y: yType === 'numeric' ? parseNumericValue(row[yColumn]) : row[yColumn],
-    label: row[xColumn]
-  })).filter(item => item.x !== null && item.y !== null)
+  const chartData = data.map((row, index) => {
+    const xRaw = row[xColumn]
+    const yRaw = row[yColumn]
+    
+    const xValue = xType === 'numeric' ? parseNumericValue(xRaw) : xRaw
+    const yValue = yType === 'numeric' ? parseNumericValue(yRaw) : yRaw
+    
+    if (index < 5) {
+      console.log(`---`)
+      console.log(`Processing Row ${index}:`)
+      console.log(`  xRaw: "${xRaw}" (type: ${typeof xRaw})`)
+      console.log(`  yRaw: "${yRaw}" (type: ${typeof yRaw})`)
+      console.log(`  xValue: ${xValue} (parsed type: ${typeof xValue})`)
+      console.log(`  yValue: ${yValue} (parsed type: ${typeof yValue})`)
+    }
+    
+    return {
+      x: xValue,
+      y: yValue,
+      label: xRaw
+    }
+  }).filter(item => item.x !== null && item.y !== null)
+  
+  console.log('---')
+  console.log('Final chartData count:', chartData.length)
+  console.log('Final chartData (first 3):')
+  chartData.slice(0, 3).forEach((item, i) => {
+    console.log(`  Item ${i}:`, item)
+  })
+  console.log('Final labels (first 5):', chartData.slice(0, 5).map(item => item.label))
+  console.log('Final values (first 5):', chartData.slice(0, 5).map(item => item.y))
+  console.log('====================')
   
   return {
     chartData,
