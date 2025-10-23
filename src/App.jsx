@@ -6,13 +6,27 @@ import './App.css'
 function App() {
   const [data, setData] = useState(null)
   const [chartType, setChartType] = useState('bar')
+  const [uploadedFileData, setUploadedFileData] = useState(null)
+  const [isReconfiguring, setIsReconfiguring] = useState(false)
 
-  const handleDataLoaded = (chartData) => {
+  const handleDataLoaded = (chartData, fileData) => {
     setData(chartData)
+    // ファイルデータを保存（再設定用）
+    if (fileData) {
+      setUploadedFileData(fileData)
+    }
+    setIsReconfiguring(false)
   }
 
   const handleReset = () => {
     setData(null)
+    setUploadedFileData(null)
+    setIsReconfiguring(false)
+  }
+
+  const handleReconfigure = () => {
+    setData(null)
+    setIsReconfiguring(true)
   }
 
   return (
@@ -20,7 +34,10 @@ function App() {
       {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold gradient-text">
+          <h1 
+            className="text-3xl font-bold gradient-text cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleReset}
+          >
             Chart Generator
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">
@@ -32,13 +49,18 @@ function App() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {!data ? (
-          <FileUpload onDataLoaded={handleDataLoaded} />
+          <FileUpload 
+            onDataLoaded={handleDataLoaded}
+            isReconfiguring={isReconfiguring}
+            savedFileData={uploadedFileData}
+          />
         ) : (
           <ChartDisplay 
             data={data} 
             chartType={chartType} 
             setChartType={setChartType}
             onReset={handleReset}
+            onReconfigure={handleReconfigure}
           />
         )}
       </main>

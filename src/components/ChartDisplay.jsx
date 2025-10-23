@@ -14,8 +14,9 @@ import {
 import { Bar, Line, Pie } from 'react-chartjs-2'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Upload, BarChart3, LineChart, PieChart, Download, Palette } from 'lucide-react'
+import { Upload, BarChart3, LineChart, PieChart, Download, Palette, Settings } from 'lucide-react'
 import { aggregateDataForPieChart } from '@/lib/dataUtils.js'
+import { formatValueWithUnit, generateAxisLabel } from '@/lib/unitUtils.js'
 
 // Chart.jsの必要なコンポーネントを登録
 ChartJS.register(
@@ -30,7 +31,7 @@ ChartJS.register(
   Legend
 )
 
-export function ChartDisplay({ data, chartType, setChartType, onReset }) {
+export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfigure }) {
   const chartRef = useRef(null)
 
   const chartTypes = [
@@ -110,6 +111,10 @@ export function ChartDisplay({ data, chartType, setChartType, onReset }) {
 
   // グラフオプションの設定
   const getChartOptions = () => {
+    const unitSettings = data?.unitSettings || {}
+    const xUnit = unitSettings.x || {}
+    const yUnit = unitSettings.y || {}
+
     const baseOptions = {
       responsive: true,
       maintainAspectRatio: false,
@@ -141,7 +146,33 @@ export function ChartDisplay({ data, chartType, setChartType, onReset }) {
           bodyFont: {
             size: 13
           },
-          padding: 12
+          padding: 12,
+          callbacks: {
+            label: function(context) {
+              let label = ''
+              
+              if (chartType === 'pie') {
+                // 円グラフの場合
+                label = context.label || ''
+                if (label) {
+                  label += ': '
+                }
+                // 円グラフではcontext.parsedが数値
+                const value = context.parsed
+                label += formatValueWithUnit(value, yUnit, true)
+              } else {
+                // 棒グラフ・折れ線グラフの場合
+                label = context.dataset.label || ''
+                if (label) {
+                  label += ': '
+                }
+                if (context.parsed.y !== null && context.parsed.y !== undefined) {
+                  label += formatValueWithUnit(context.parsed.y, yUnit, true)
+                }
+              }
+              return label
+            }
+          }
         }
       },
       animation: {
@@ -181,7 +212,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset }) {
           },
           title: {
             display: true,
-            text: data?.xColumn || 'X軸',
+            text: generateAxisLabel(data?.xColumn || 'X軸', xUnit),
             color: 'rgb(75, 85, 99)',
             font: {
               size: 13,
@@ -198,11 +229,14 @@ export function ChartDisplay({ data, chartType, setChartType, onReset }) {
             color: 'rgb(107, 114, 128)',
             font: {
               size: 11
+            },
+            callback: function(value, index, ticks) {
+              return formatValueWithUnit(value, yUnit)
             }
           },
           title: {
             display: true,
-            text: data?.yColumn || 'Y軸',
+            text: generateAxisLabel(data?.yColumn || 'Y軸', yUnit),
             color: 'rgb(75, 85, 99)',
             font: {
               size: 13,
@@ -309,19 +343,23 @@ export function ChartDisplay({ data, chartType, setChartType, onReset }) {
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {Math.max(...(data.values || [0])).toLocaleString()}
+                {formatValueWithUnit(Math.max(...(data.values || [0])), data.unitSettings?.y || {}, true)}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300">最大値</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {Math.min(...(data.values || [0])).toLocaleString()}
+                {formatValueWithUnit(Math.min(...(data.values || [0])), data.unitSettings?.y || {}, true)}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300">最小値</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {(data.values?.reduce((a, b) => a + b, 0) / data.values?.length || 0).toFixed(1)}
+                {formatValueWithUnit(
+                  (data.values?.reduce((a, b) => a + b, 0) / data.values?.length || 0),
+                  data.unitSettings?.y || {},
+                  true
+                )}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300">平均値</p>
             </div>
@@ -337,7 +375,15 @@ export function ChartDisplay({ data, chartType, setChartType, onReset }) {
           onClick={onReset}
         >
           <Upload className="h-4 w-4 mr-2" />
-          別のファイルをアップロード
+          ホームに戻る
+        </Button>
+        <Button 
+          variant="outline" 
+          className="glass-button" 
+          onClick={onReconfigure}
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          条件を変えて再生成
         </Button>
         <Button 
           className="glass-button bg-black text-white hover:bg-gray-800" 

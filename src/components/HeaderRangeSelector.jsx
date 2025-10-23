@@ -10,6 +10,11 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
   const [headerStartRow, setHeaderStartRow] = useState(0)
   const [headerEndRow, setHeaderEndRow] = useState(0)
   const [dataStartRow, setDataStartRow] = useState(1)
+  
+  // 表示用の文字列state（空欄を許容するため）
+  const [headerStartRowInput, setHeaderStartRowInput] = useState('1')
+  const [headerEndRowInput, setHeaderEndRowInput] = useState('1')
+  const [dataStartRowInput, setDataStartRowInput] = useState('2')
 
   // プレビュー用のヘッダーとデータ
   const previewData = useMemo(() => {
@@ -79,51 +84,81 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
             <Label>ヘッダー開始行</Label>
             <Input
               type="number"
-              value={headerStartRow}
+              value={headerStartRowInput}
               onChange={(e) => {
-                const val = Math.max(0, Math.min(Number(e.target.value), processedData.length - 1))
-                setHeaderStartRow(val)
-                if (val > headerEndRow) setHeaderEndRow(val)
-                if (dataStartRow <= val) setDataStartRow(val + 1)
+                const val = e.target.value;
+                setHeaderStartRowInput(val);
+                if (val !== '' && !isNaN(Number(val))) {
+                  const numVal = Math.max(1, Math.min(Number(val), processedData.length));
+                  setHeaderStartRow(numVal - 1);
+                  if (numVal - 1 > headerEndRow) {
+                    setHeaderEndRow(numVal - 1);
+                    setHeaderEndRowInput(String(numVal));
+                  }
+                  if (dataStartRow <= numVal - 1) {
+                    setDataStartRow(numVal);
+                    setDataStartRowInput(String(numVal + 1));
+                  }
+                }
               }}
-              min={0}
-              max={processedData.length - 1}
+              onBlur={() => {
+                if (headerStartRowInput === '' || isNaN(Number(headerStartRowInput))) {
+                  setHeaderStartRowInput(String(headerStartRow + 1));
+                }
+              }}
+              min={1}
+              max={processedData.length}
             />
-            <div className="text-xs text-gray-500">
-              行 {headerStartRow + 1}
-            </div>
           </div>
 
           <div className="space-y-2">
             <Label>ヘッダー終了行</Label>
             <Input
               type="number"
-              value={headerEndRow}
+              value={headerEndRowInput}
               onChange={(e) => {
-                const val = Math.max(headerStartRow, Math.min(Number(e.target.value), processedData.length - 1))
-                setHeaderEndRow(val)
-                if (dataStartRow <= val) setDataStartRow(val + 1)
+                const val = e.target.value;
+                setHeaderEndRowInput(val);
+                if (val !== '' && !isNaN(Number(val))) {
+                  const numVal = Math.max(headerStartRow + 1, Math.min(Number(val), processedData.length));
+                  setHeaderEndRow(numVal - 1);
+                  if (dataStartRow <= numVal - 1) {
+                    setDataStartRow(numVal);
+                    setDataStartRowInput(String(numVal + 1));
+                  }
+                }
               }}
-              min={headerStartRow}
-              max={processedData.length - 1}
+              onBlur={() => {
+                if (headerEndRowInput === '' || isNaN(Number(headerEndRowInput))) {
+                  setHeaderEndRowInput(String(headerEndRow + 1));
+                }
+              }}
+              min={headerStartRow + 1}
+              max={processedData.length}
             />
-            <div className="text-xs text-gray-500">
-              行 {headerEndRow + 1}
-            </div>
           </div>
 
           <div className="space-y-2">
             <Label>データ開始行</Label>
             <Input
               type="number"
-              value={dataStartRow}
-              onChange={(e) => setDataStartRow(Math.max(headerEndRow + 1, Math.min(Number(e.target.value), processedData.length - 1)))}
-              min={headerEndRow + 1}
-              max={processedData.length - 1}
+              value={dataStartRowInput}
+              onChange={(e) => {
+                const val = e.target.value;
+                setDataStartRowInput(val);
+                if (val !== '' && !isNaN(Number(val))) {
+                  const numVal = Math.max(headerEndRow + 2, Math.min(Number(val), processedData.length));
+                  setDataStartRow(numVal - 1);
+                }
+              }}
+              onBlur={() => {
+                if (dataStartRowInput === '' || isNaN(Number(dataStartRowInput))) {
+                  setDataStartRowInput(String(dataStartRow + 1));
+                }
+              }}
+              min={headerEndRow + 2}
+              max={processedData.length}
             />
-            <div className="text-xs text-gray-500">
-              行 {dataStartRow + 1}
-            </div>
           </div>
         </div>
 

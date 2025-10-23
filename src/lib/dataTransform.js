@@ -168,3 +168,54 @@ export const extractHeadersAndDataRows = (data, headerStartRow, headerEndRow, da
   
   return { headers, data: dataRows }
 }
+
+/**
+ * 列ヘッダー領域とデータ本体領域を結合する
+ * @param {Array<Array<any>>} rawRows - 全データ
+ * @param {Object} headerRange - 列ヘッダー範囲 { startRow, endRow, startCol, endCol }
+ * @param {Object} dataRange - データ本体範囲 { startRow, endRow, startCol, endCol }
+ * @returns {Array<Array<any>>} 結合されたデータ（ヘッダー行 + データ行）
+ */
+export const combineHeaderAndDataRanges = (rawRows, headerRange, dataRange) => {
+  console.log('=== combineHeaderAndDataRanges ===')
+  console.log('Header range:', headerRange)
+  console.log('Data range:', dataRange)
+  
+  // 列ヘッダー領域を抽出
+  const headerData = extractDataRange(rawRows, headerRange)
+  console.log('Extracted header data:', headerData)
+  
+  // データ本体領域を抽出
+  const bodyData = extractDataRange(rawRows, dataRange)
+  console.log('Extracted body data (first 3 rows):', bodyData.slice(0, 3))
+  
+  // 列数を揃える（dataRangeの列数に合わせる）
+  const numColumns = dataRange.endCol - dataRange.startCol + 1
+  
+  // ヘッダー行を正規化
+  const normalizedHeaders = headerData.map(row => {
+    const normalized = []
+    for (let i = 0; i < numColumns; i++) {
+      normalized.push(i < row.length ? row[i] : '')
+    }
+    return normalized
+  })
+  
+  // データ行を正規化
+  const normalizedBody = bodyData.map(row => {
+    const normalized = []
+    for (let i = 0; i < numColumns; i++) {
+      normalized.push(i < row.length ? row[i] : '')
+    }
+    return normalized
+  })
+  
+  // ヘッダー + データを結合
+  const combined = [...normalizedHeaders, ...normalizedBody]
+  
+  console.log('Combined data (first 5 rows):', combined.slice(0, 5))
+  console.log('Total rows:', combined.length)
+  console.log('============================')
+  
+  return combined
+}

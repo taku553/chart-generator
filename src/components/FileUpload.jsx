@@ -2,17 +2,21 @@ import { useState, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
-import { Upload, FileText, AlertCircle, CheckCircle2, Table } from 'lucide-react'
+import { Upload, FileText, AlertCircle, CheckCircle2, Table, ArrowLeft, Home } from 'lucide-react'
 import { parseFile, transformDataForChart } from '@/lib/dataUtils.js'
-import { processSelectedRange } from '@/lib/dataTransform.js'
+import { processSelectedRange, combineHeaderAndDataRanges } from '@/lib/dataTransform.js'
 import { DataRangeSelector } from '@/components/DataRangeSelector.jsx'
 import { DataOrientationSelector } from '@/components/DataOrientationSelector.jsx'
 import { HeaderRangeSelector } from '@/components/HeaderRangeSelector.jsx'
+import { UnitSettings } from '@/components/UnitSettings.jsx'
+import { SeparateHeaderSelector } from '@/components/SeparateHeaderSelector.jsx'
 
-export function FileUpload({ onDataLoaded }) {
+export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileData = null }) {
   const [file, setFile] = useState(null)
   const [rawRows, setRawRows] = useState(null)
   const [selectedRange, setSelectedRange] = useState(null)
+  const [separateHeaderConfirmed, setSeparateHeaderConfirmed] = useState(false)
+  const [headerRange, setHeaderRange] = useState(null)
   const [orientationConfirmed, setOrientationConfirmed] = useState(false)
   const [processedDataForHeader, setProcessedDataForHeader] = useState(null)
   const [headerRangeConfirmed, setHeaderRangeConfirmed] = useState(false)
@@ -21,6 +25,8 @@ export function FileUpload({ onDataLoaded }) {
   const [error, setError] = useState(null)
   const [xColumn, setXColumn] = useState('')
   const [yColumn, setYColumn] = useState('')
+  const [axisSelected, setAxisSelected] = useState(false)
+  const [unitSettings, setUnitSettings] = useState(null)
   const [dragActive, setDragActive] = useState(false)
   const [showSampleData, setShowSampleData] = useState(false)
   const [sampleData, setSampleData] = useState(null)
@@ -48,6 +54,16 @@ export function FileUpload({ onDataLoaded }) {
     }
     loadSampleData()
   }, [])
+
+  // 再設定モードの処理
+  useEffect(() => {
+    if (isReconfiguring && savedFileData) {
+      setFile(savedFileData.file)
+      setRawRows(savedFileData.rawRows)
+      setError(null)
+      setLoading(false)
+    }
+  }, [isReconfiguring, savedFileData])
 
   // ドラッグ&ドロップ処理
   const handleDrag = useCallback((e) => {
@@ -79,6 +95,8 @@ export function FileUpload({ onDataLoaded }) {
     setLoading(true)
     setRawRows(null)
     setSelectedRange(null)
+    setSeparateHeaderConfirmed(false)
+    setHeaderRange(null)
     setOrientationConfirmed(false)
     setProcessedDataForHeader(null)
     setHeaderRangeConfirmed(false)
@@ -108,6 +126,24 @@ export function FileUpload({ onDataLoaded }) {
   // データ領域選択後の処理
   const handleRangeSelect = ({ data, range }) => {
     setSelectedRange({ data, range })
+  }
+
+  // 別領域ヘッダー選択後の処理
+  const handleHeaderRangeSelect = ({ data, range }) => {
+    setHeaderRange(range)
+    setSeparateHeaderConfirmed(true)
+    
+    // ヘッダーとデータを結合
+    const combinedData = combineHeaderAndDataRanges(rawRows, range, selectedRange.range)
+    setProcessedDataForHeader(combinedData)
+    setOrientationConfirmed(true) // 向き確認はスキップして次へ
+  }
+
+  // 別領域ヘッダーをスキップ
+  const handleSkipSeparateHeader = () => {
+    setSeparateHeaderConfirmed(true)
+    setHeaderRange(null)
+    // 通常のフローに進む（向き確認へ）
   }
 
   // データ向き確認後の処理
@@ -184,13 +220,35 @@ export function FileUpload({ onDataLoaded }) {
     }
   }
 
+  // 軸選択確定処理
+  const handleAxisSelect = () => {
+    if (!xColumn || !yColumn) return
+    setAxisSelected(true)
+  }
+
+  // 単位設定確定後の処理
+  const handleUnitConfirm = (units) => {
+    setUnitSettings(units)
+    handleGenerateChart(units)
+  }
+
   // グラフ生成処理
-  const handleGenerateChart = () => {
+  const handleGenerateChart = (units = unitSettings) => {
     if (!processedData || !xColumn || !yColumn) return
 
     try {
       const chartData = transformDataForChart(processedData, xColumn, yColumn)
-      onDataLoaded(chartData)
+      
+      // 単位設定を追加
+      chartData.unitSettings = units
+      
+      // ファイルデータを保存して親に渡す
+      const fileData = {
+        file: file,
+        rawRows: rawRows
+      }
+      
+      onDataLoaded(chartData, fileData)
     } catch (err) {
       setError('グラフデータの変換中にエラーが発生しました')
     }
@@ -201,12 +259,16 @@ export function FileUpload({ onDataLoaded }) {
     setFile(null)
     setRawRows(null)
     setSelectedRange(null)
+    setSeparateHeaderConfirmed(false)
+    setHeaderRange(null)
     setOrientationConfirmed(false)
     setProcessedDataForHeader(null)
     setHeaderRangeConfirmed(false)
     setProcessedData(null)
     setXColumn('')
     setYColumn('')
+    setAxisSelected(false)
+    setUnitSettings(null)
     setError(null)
     const fileInput = document.getElementById('file-input')
     if (fileInput) fileInput.value = ''
@@ -324,38 +386,119 @@ export function FileUpload({ onDataLoaded }) {
 
       {/* データ領域選択 */}
       {rawRows && !selectedRange && !loading && (
-        <DataRangeSelector 
-          rawRows={rawRows}
-          onRangeSelect={handleRangeSelect}
-        />
+        <div className="space-y-4">
+          <DataRangeSelector 
+            rawRows={rawRows}
+            onRangeSelect={handleRangeSelect}
+          />
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={handleReset}
+            >
+              <Home className="h-4 w-4 mr-2" />
+              最初に戻る
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 列ヘッダー位置確認 */}
+      {selectedRange && !separateHeaderConfirmed && (
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={() => setSelectedRange(null)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              前に戻る
+            </Button>
+          </div>
+          <SeparateHeaderSelector
+            rawRows={rawRows}
+            dataRange={selectedRange.range}
+            onHeaderRangeSelect={handleHeaderRangeSelect}
+            onSkip={handleSkipSeparateHeader}
+          />
+        </div>
       )}
 
       {/* データ向き確認 */}
-      {selectedRange && !orientationConfirmed && (
-        <DataOrientationSelector
-          selectedData={selectedRange.data}
-          onOrientationSelect={handleOrientationSelect}
-        />
+      {selectedRange && separateHeaderConfirmed && !headerRange && !orientationConfirmed && (
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={() => setSeparateHeaderConfirmed(false)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              前に戻る
+            </Button>
+          </div>
+          <DataOrientationSelector
+            selectedData={selectedRange.data}
+            onOrientationSelect={handleOrientationSelect}
+          />
+        </div>
       )}
 
       {/* ヘッダー領域選択（NEW） */}
       {orientationConfirmed && processedDataForHeader && !headerRangeConfirmed && (
-        <HeaderRangeSelector
-          processedData={processedDataForHeader}
-          onHeaderRangeConfirm={handleHeaderRangeConfirm}
-        />
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={() => {
+                setOrientationConfirmed(false)
+                if (headerRange) {
+                  // 別領域ヘッダーを使用している場合
+                  setSeparateHeaderConfirmed(false)
+                  setHeaderRange(null)
+                }
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              前に戻る
+            </Button>
+          </div>
+          <HeaderRangeSelector
+            processedData={processedDataForHeader}
+            onHeaderRangeConfirm={handleHeaderRangeConfirm}
+          />
+        </div>
       )}
 
       {/* 列選択エリア */}
-      {headerRangeConfirmed && processedData && processedData.headers.length >= 2 && (
-        <Card className="glass-card fade-in stagger-animation">
-          <CardHeader>
-            <CardTitle>軸の設定</CardTitle>
-            <CardDescription>
-              グラフの横軸（X軸）と縦軸（Y軸）に使用する列を選択してください
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      {headerRangeConfirmed && processedData && processedData.headers.length >= 2 && !axisSelected && (
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={() => {
+                setHeaderRangeConfirmed(false)
+                setProcessedData(null)
+                setXColumn('')
+                setYColumn('')
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              前に戻る
+            </Button>
+          </div>
+          <Card className="glass-card fade-in stagger-animation">
+            <CardHeader>
+              <CardTitle>軸の設定</CardTitle>
+              <CardDescription>
+                グラフの横軸（X軸）と縦軸（Y軸）に使用する列を選択してください
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">横軸（X軸）</label>
@@ -423,13 +566,25 @@ export function FileUpload({ onDataLoaded }) {
 
             <Button 
               className="w-full glass-button" 
-              onClick={handleGenerateChart}
+              onClick={handleAxisSelect}
               disabled={!xColumn || !yColumn}
             >
-              グラフを生成
+              次へ：単位とスケールを設定
             </Button>
           </CardContent>
         </Card>
+        </div>
+      )}
+
+      {/* 単位設定エリア */}
+      {axisSelected && !unitSettings && (
+        <UnitSettings
+          xColumn={xColumn}
+          yColumn={yColumn}
+          sampleData={processedData.data}
+          onConfirm={handleUnitConfirm}
+          onBack={() => setAxisSelected(false)}
+        />
       )}
 
       {/* サンプルデータ表示エリア */}

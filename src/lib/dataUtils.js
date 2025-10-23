@@ -2,41 +2,124 @@ import Papa from 'papaparse'
 import * as XLSX from 'xlsx'
 
 /**
+ * CSVファイルのエンコーディングを自動検出して解析する
+ * @param {File} file - CSVファイル
+ * @returns {Promise<Object>} 解析されたデータ
+ */
+const parseCSVWithEncoding = async (file) => {
+  // エンコーディング候補を優先順位順に定義
+  const encodings = ['UTF-8', 'Shift_JIS', 'EUC-JP']
+  
+  for (const encoding of encodings) {
+    try {
+      const text = await readFileAsText(file, encoding)
+      
+      // PapaParseで解析を試行
+      const result = await new Promise((resolve, reject) => {
+        Papa.parse(text, {
+          header: false,
+          skipEmptyLines: true,
+          complete: (results) => {
+            if (results.errors.length > 0) {
+              reject(new Error('解析エラー'))
+              return
+            }
+            resolve(results)
+          },
+          error: (error) => {
+            reject(error)
+          }
+        })
+      })
+
+      // 文字化けチェック: 日本語が正しく読めているか確認
+      const hasValidJapanese = result.data.some(row => 
+        row.some(cell => {
+          const str = String(cell)
+          // 日本語文字が含まれているか、または文字化けしていないかをチェック
+          // 文字化けの特徴: �や不自然な文字の連続
+          return /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(str) && 
+                 !/�/.test(str)
+        })
+      )
+
+      // 日本語が含まれていない場合でも、文字化けがなければOK
+      const hasGarbledText = result.data.some(row =>
+        row.some(cell => /�/.test(String(cell)))
+      )
+
+      if (!hasGarbledText) {
+        console.log(`CSV読み込み成功: エンコーディング = ${encoding}`)
+        return result.data
+      }
+    } catch (err) {
+      // このエンコーディングでは失敗、次を試行
+      console.log(`${encoding}での読み込みに失敗、次を試行...`)
+      continue
+    }
+  }
+
+  // すべてのエンコーディングで失敗した場合、UTF-8で再試行（フォールバック）
+  console.log('すべてのエンコーディングで失敗、UTF-8で再試行')
+  const text = await readFileAsText(file, 'UTF-8')
+  return new Promise((resolve, reject) => {
+    Papa.parse(text, {
+      header: false,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0) {
+          reject(new Error('CSVファイルの解析中にエラーが発生しました'))
+          return
+        }
+        resolve(results.data)
+      },
+      error: (error) => {
+        reject(new Error('ファイルの読み込みに失敗しました'))
+      }
+    })
+  })
+}
+
+/**
+ * 指定されたエンコーディングでファイルをテキストとして読み込む
+ * @param {File} file - 読み込むファイル
+ * @param {string} encoding - エンコーディング (UTF-8, Shift_JIS, EUC-JP等)
+ * @returns {Promise<string>} 読み込まれたテキスト
+ */
+const readFileAsText = (file, encoding) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = (error) => reject(error)
+    reader.readAsText(file, encoding)
+  })
+}
+
+/**
  * ファイルを解析してデータを返す (CSV/Excel対応)
  * ヘッダーを自動で認識せず、全ての行をデータとして返す
  * @param {File} file - アップロードされたファイル
  * @returns {Promise<Object>} 解析されたデータ
  */
-export const parseFile = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
+export const parseFile = async (file) => {
+  const fileExtension = file.name.toLowerCase().split('.').pop()
 
-    reader.onload = (e) => {
-      const data = e.target.result
-      const fileExtension = file.name.toLowerCase().split('.').pop()
-
-      if (fileExtension === 'csv') {
-        Papa.parse(file, {
-          header: false, // ヘッダーを自動認識しない
-          skipEmptyLines: true,
-          complete: (results) => {
-            if (results.errors.length > 0) {
-              reject(new Error('CSVファイルの解析中にエラーが発生しました'))
-              return
-            }
-            const rawRows = results.data
-            if (rawRows.length === 0) {
-              reject(new Error('ファイルにデータが含まれていません'))
-              return
-            }
-            resolve({ rawRows, rowCount: rawRows.length })
-          },
-          error: (error) => {
-            reject(new Error('ファイルの読み込みに失敗しました'))
-          }
-        })
-      } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+  if (fileExtension === 'csv') {
+    try {
+      const rawRows = await parseCSVWithEncoding(file)
+      if (rawRows.length === 0) {
+        throw new Error('ファイルにデータが含まれていません')
+      }
+      return { rawRows, rowCount: rawRows.length }
+    } catch (err) {
+      throw new Error(err.message || 'CSVファイルの読み込みに失敗しました')
+    }
+  } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
         try {
+          const data = e.target.result
           const workbook = XLSX.read(data, { type: 'array' })
           const sheetName = workbook.SheetNames[0]
           const worksheet = workbook.Sheets[sheetName]
@@ -50,26 +133,13 @@ export const parseFile = (file) => {
         } catch (err) {
           reject(new Error('Excelファイルの解析中にエラーが発生しました: ' + err.message))
         }
-      } else {
-        reject(new Error('サポートされていないファイル形式です。CSV、Excel形式のファイルをアップロードしてください。'))
       }
-    }
-
-    reader.onerror = (error) => {
-      reject(new Error('ファイルの読み込みに失敗しました'))
-    }
-
-    // ファイルタイプに応じて読み込み方法を変更
-    const fileExtension = file.name.toLowerCase().split('.').pop()
-    if (fileExtension === 'csv') {
-      reader.readAsText(file) // CSVはテキストとして読み込む
-    } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-      reader.readAsArrayBuffer(file) // ExcelはArrayBufferとして読み込む
-    } else {
-      reject(new Error('サポートされていないファイル形式です。CSV、Excel形式のファイルをアップロードしてください。'))
-      return // reject後に処理を終了
-    }
-  })
+      reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'))
+      reader.readAsArrayBuffer(file)
+    })
+  } else {
+    throw new Error('サポートされていないファイル形式です。CSV、Excel形式のファイルをアップロードしてください。')
+  }
 }
 
 /**
@@ -172,14 +242,31 @@ export const parseNumericValue = (value) => {
   // 空文字列や null の場合
   if (!value || value.trim() === '') return 0
   
-  // カンマを除去
-  const cleanValue = value.replace(/[\s,]/g, '')
+  // 三角形記号（△）がマイナスを表す場合の処理
+  let isNegative = false
+  let cleanValue = value
+  
+  // △記号をチェック（全角・半角両方に対応）
+  if (/[△▲]/.test(cleanValue)) {
+    isNegative = true
+    // △記号を除去
+    cleanValue = cleanValue.replace(/[△▲]/g, '')
+  }
+  
+  // カンマとスペースを除去
+  cleanValue = cleanValue.replace(/[\s,]/g, '')
   
   // 数値に変換を試行
   const numValue = parseFloat(cleanValue)
   
-  // 有効な数値の場合は数値を返し、そうでなければ元の値を返す
-  return !isNaN(numValue) ? numValue : value
+  // 有効な数値の場合
+  if (!isNaN(numValue)) {
+    // △があった場合はマイナスにする
+    return isNegative ? -numValue : numValue
+  }
+  
+  // 数値に変換できない場合は元の値を返す
+  return value
 }
 
 /**

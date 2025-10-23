@@ -6,12 +6,18 @@ import { Label } from '@/components/ui/label'
 import { ChevronDown, Table2 } from 'lucide-react'
 import { extractDataRange } from '@/lib/dataTransform'
 
-export function DataRangeSelector({ rawRows, onRangeSelect }) {
-  const [startRow, setStartRow] = useState(0)
-  const [endRow, setEndRow] = useState(Math.min(rawRows.length - 1, 19))
-  const [startCol, setStartCol] = useState(0)
-  const [endCol, setEndCol] = useState(Math.min(rawRows[0]?.length - 1 || 0, 25))
+export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initialRange = null }) {
+  const [startRow, setStartRow] = useState(initialRange?.startRow ?? 0)
+  const [endRow, setEndRow] = useState(initialRange?.endRow ?? Math.min(rawRows.length - 1, 19))
+  const [startCol, setStartCol] = useState(initialRange?.startCol ?? 0)
+  const [endCol, setEndCol] = useState(initialRange?.endCol ?? Math.min(rawRows[0]?.length - 1 || 0, 25))
   const [displayRows, setDisplayRows] = useState(20) // 表示する行数
+  
+  // 表示用の文字列state（空欄を許容するため）
+  const [startRowInput, setStartRowInput] = useState(String((initialRange?.startRow ?? 0) + 1))
+  const [endRowInput, setEndRowInput] = useState(String((initialRange?.endRow ?? Math.min(rawRows.length - 1, 19)) + 1))
+  const [startColInput, setStartColInput] = useState(String((initialRange?.startCol ?? 0) + 1))
+  const [endColInput, setEndColInput] = useState(String((initialRange?.endCol ?? Math.min(rawRows[0]?.length - 1 || 0, 25)) + 1))
 
   // 表示用のデータ
   const visibleRows = useMemo(() => {
@@ -62,10 +68,13 @@ export function DataRangeSelector({ rawRows, onRangeSelect }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Table2 className="h-5 w-5" />
-          データ領域を選択
+          {mode === 'header' ? '列ヘッダー領域を選択' : 'データ領域を選択'}
         </CardTitle>
         <CardDescription>
-          グラフ化したいデータの範囲を指定してください。青色でハイライトされた領域が選択されます。
+          {mode === 'header' 
+            ? '項目名（列ヘッダー）が記載されている範囲を指定してください。複数行にまたがる場合は全て含めてください。'
+            : 'グラフ化したいデータの範囲を指定してください。青色でハイライトされた領域が選択されます。'
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -75,40 +84,84 @@ export function DataRangeSelector({ rawRows, onRangeSelect }) {
             <Label>開始行</Label>
             <Input
               type="number"
-              value={startRow}
-              onChange={(e) => setStartRow(Math.max(0, Math.min(Number(e.target.value), rawRows.length - 1)))}
-              min={0}
-              max={rawRows.length - 1}
+              value={startRowInput}
+              onChange={(e) => {
+                const val = e.target.value
+                setStartRowInput(val)
+                if (val !== '' && !isNaN(Number(val))) {
+                  setStartRow(Math.max(0, Math.min(Number(val) - 1, rawRows.length - 1)))
+                }
+              }}
+              onBlur={() => {
+                if (startRowInput === '' || isNaN(Number(startRowInput))) {
+                  setStartRowInput(String(startRow + 1))
+                }
+              }}
+              min={1}
+              max={rawRows.length}
             />
           </div>
           <div className="space-y-2">
             <Label>終了行</Label>
             <Input
               type="number"
-              value={endRow}
-              onChange={(e) => setEndRow(Math.max(startRow, Math.min(Number(e.target.value), rawRows.length - 1)))}
-              min={startRow}
-              max={rawRows.length - 1}
+              value={endRowInput}
+              onChange={(e) => {
+                const val = e.target.value
+                setEndRowInput(val)
+                if (val !== '' && !isNaN(Number(val))) {
+                  setEndRow(Math.max(startRow, Math.min(Number(val) - 1, rawRows.length - 1)))
+                }
+              }}
+              onBlur={() => {
+                if (endRowInput === '' || isNaN(Number(endRowInput))) {
+                  setEndRowInput(String(endRow + 1))
+                }
+              }}
+              min={startRow + 1}
+              max={rawRows.length}
             />
           </div>
           <div className="space-y-2">
-            <Label>開始列（A=0）</Label>
+            <Label>開始列</Label>
             <Input
               type="number"
-              value={startCol}
-              onChange={(e) => setStartCol(Math.max(0, Math.min(Number(e.target.value), rawRows[0]?.length - 1 || 0)))}
-              min={0}
-              max={rawRows[0]?.length - 1 || 0}
+              value={startColInput}
+              onChange={(e) => {
+                const val = e.target.value
+                setStartColInput(val)
+                if (val !== '' && !isNaN(Number(val))) {
+                  setStartCol(Math.max(0, Math.min(Number(val) - 1, rawRows[0]?.length - 1 || 0)))
+                }
+              }}
+              onBlur={() => {
+                if (startColInput === '' || isNaN(Number(startColInput))) {
+                  setStartColInput(String(startCol + 1))
+                }
+              }}
+              min={1}
+              max={rawRows[0]?.length || 1}
             />
           </div>
           <div className="space-y-2">
-            <Label>終了列（A=0）</Label>
+            <Label>終了列</Label>
             <Input
               type="number"
-              value={endCol}
-              onChange={(e) => setEndCol(Math.max(startCol, Math.min(Number(e.target.value), rawRows[0]?.length - 1 || 0)))}
-              min={startCol}
-              max={rawRows[0]?.length - 1 || 0}
+              value={endColInput}
+              onChange={(e) => {
+                const val = e.target.value
+                setEndColInput(val)
+                if (val !== '' && !isNaN(Number(val))) {
+                  setEndCol(Math.max(startCol, Math.min(Number(val) - 1, rawRows[0]?.length - 1 || 0)))
+                }
+              }}
+              onBlur={() => {
+                if (endColInput === '' || isNaN(Number(endColInput))) {
+                  setEndColInput(String(endCol + 1))
+                }
+              }}
+              min={startCol + 1}
+              max={rawRows[0]?.length || 1}
             />
           </div>
         </div>
@@ -195,10 +248,10 @@ export function DataRangeSelector({ rawRows, onRangeSelect }) {
         {/* 確定ボタン */}
         <Button 
           onClick={handleConfirm} 
-          className="w-full glass-button"
+          className="w-full glass-button text-black dark:text-white"
           size="lg"
         >
-          この範囲を使用してグラフを作成
+          {mode === 'header' ? 'この範囲を列ヘッダーとして使用' : 'この範囲を使用してグラフを作成'}
         </Button>
       </CardContent>
     </Card>
