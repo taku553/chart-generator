@@ -99,9 +99,10 @@ const readFileAsText = (file, encoding) => {
  * ファイルを解析してデータを返す (CSV/Excel対応)
  * ヘッダーを自動で認識せず、全ての行をデータとして返す
  * @param {File} file - アップロードされたファイル
+ * @param {string} sheetName - Excelの場合に読み込むシート名（オプション）
  * @returns {Promise<Object>} 解析されたデータ
  */
-export const parseFile = async (file) => {
+export const parseFile = async (file, sheetName = null) => {
   const fileExtension = file.name.toLowerCase().split('.').pop()
 
   if (fileExtension === 'csv') {
@@ -110,7 +111,7 @@ export const parseFile = async (file) => {
       if (rawRows.length === 0) {
         throw new Error('ファイルにデータが含まれていません')
       }
-      return { rawRows, rowCount: rawRows.length }
+      return { rawRows, rowCount: rawRows.length, sheetNames: null }
     } catch (err) {
       throw new Error(err.message || 'CSVファイルの読み込みに失敗しました')
     }
@@ -121,15 +122,30 @@ export const parseFile = async (file) => {
         try {
           const data = e.target.result
           const workbook = XLSX.read(data, { type: 'array' })
-          const sheetName = workbook.SheetNames[0]
-          const worksheet = workbook.Sheets[sheetName]
+          const sheetNames = workbook.SheetNames
+          
+          // シート名が指定されていない場合は最初のシートを使用
+          const targetSheetName = sheetName || sheetNames[0]
+          
+          // 指定されたシート名が存在するか確認
+          if (!sheetNames.includes(targetSheetName)) {
+            reject(new Error(`シート "${targetSheetName}" が見つかりません`))
+            return
+          }
+          
+          const worksheet = workbook.Sheets[targetSheetName]
           const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: "" })
 
           if (rawRows.length === 0) {
             reject(new Error('ファイルにデータが含まれていません'))
             return
           }
-          resolve({ rawRows, rowCount: rawRows.length })
+          resolve({ 
+            rawRows, 
+            rowCount: rawRows.length,
+            sheetNames: sheetNames,
+            selectedSheet: targetSheetName
+          })
         } catch (err) {
           reject(new Error('Excelファイルの解析中にエラーが発生しました: ' + err.message))
         }

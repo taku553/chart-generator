@@ -10,9 +10,13 @@ import { DataOrientationSelector } from '@/components/DataOrientationSelector.js
 import { HeaderRangeSelector } from '@/components/HeaderRangeSelector.jsx'
 import { UnitSettings } from '@/components/UnitSettings.jsx'
 import { SeparateHeaderSelector } from '@/components/SeparateHeaderSelector.jsx'
+import { SheetSelector } from '@/components/SheetSelector.jsx'
 
 export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileData = null, onReset }) {
   const [file, setFile] = useState(null)
+  const [sheetNames, setSheetNames] = useState(null)
+  const [selectedSheet, setSelectedSheet] = useState(null)
+  const [sheetSelectionConfirmed, setSheetSelectionConfirmed] = useState(false)
   const [rawRows, setRawRows] = useState(null)
   const [selectedRange, setSelectedRange] = useState(null)
   const [separateHeaderConfirmed, setSeparateHeaderConfirmed] = useState(false)
@@ -60,6 +64,12 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     if (isReconfiguring && savedFileData) {
       setFile(savedFileData.file)
       setRawRows(savedFileData.rawRows)
+      setSheetNames(savedFileData.sheetNames)
+      setSelectedSheet(savedFileData.selectedSheet)
+      // シート選択は完了済みとしてマーク
+      if (!savedFileData.sheetNames || savedFileData.sheetNames.length <= 1) {
+        setSheetSelectionConfirmed(true)
+      }
       setError(null)
       setLoading(false)
     }
@@ -93,6 +103,9 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     setFile(selectedFile)
     setError(null)
     setLoading(true)
+    setSheetNames(null)
+    setSelectedSheet(null)
+    setSheetSelectionConfirmed(false)
     setRawRows(null)
     setSelectedRange(null)
     setSeparateHeaderConfirmed(false)
@@ -106,10 +119,25 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
 
     try {
       const parsedData = await parseFile(selectedFile)
-      setRawRows(parsedData.rawRows)
+      
+      // シート情報を確認
+      if (parsedData.sheetNames && parsedData.sheetNames.length > 1) {
+        // 複数シートがある場合
+        setSheetNames(parsedData.sheetNames)
+        setSelectedSheet(parsedData.selectedSheet)
+        setSheetSelectionConfirmed(false) // シート選択UIを表示
+      } else {
+        // シートが1つまたはCSVの場合
+        setSheetNames(parsedData.sheetNames)
+        setSelectedSheet(parsedData.selectedSheet || null)
+        setSheetSelectionConfirmed(true) // シート選択をスキップ
+        setRawRows(parsedData.rawRows)
+      }
     } catch (err) {
       setError(err.message)
       setFile(null)
+      setSheetNames(null)
+      setSelectedSheet(null)
       setRawRows(null)
     } finally {
       setLoading(false)
@@ -121,6 +149,31 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     if (e.target.files && e.target.files[0]) {
       handleFileSelection(e.target.files[0])
     }
+  }
+
+  // シート選択処理
+  const handleSheetSelect = async (sheetName) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      // 選択されたシートのデータを読み込む
+      const parsedData = await parseFile(file, sheetName)
+      setSelectedSheet(sheetName)
+      setRawRows(parsedData.rawRows)
+      setSheetSelectionConfirmed(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // シート選択に戻る
+  const handleBackToSheetSelection = () => {
+    setSheetSelectionConfirmed(false)
+    setRawRows(null)
+    setSelectedRange(null)
   }
 
   // データ領域選択後の処理
@@ -242,10 +295,12 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
       // 単位設定を追加
       chartData.unitSettings = units
       
-      // ファイルデータを保存して親に渡す
+      // ファイルデータを保存して親に渡す（シート情報も含める）
       const fileData = {
         file: file,
-        rawRows: rawRows
+        rawRows: rawRows,
+        sheetNames: sheetNames,
+        selectedSheet: selectedSheet
       }
       
       onDataLoaded(chartData, fileData)
@@ -257,6 +312,9 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
   // リセット処理
   const handleReset = () => {
     setFile(null)
+    setSheetNames(null)
+    setSelectedSheet(null)
+    setSheetSelectionConfirmed(false)
     setRawRows(null)
     setSelectedRange(null)
     setSeparateHeaderConfirmed(false)
@@ -340,7 +398,43 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
       )}
 
       {/* ファイル情報表示 */}
-      {file && !selectedRange && (
+      {file && !sheetSelectionConfirmed && !selectedRange && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 slide-in-right bounce-animation">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="flex-1">
+              <p className="text-green-800 dark:text-green-200 font-medium">
+                {file.name}
+              </p>
+              {sheetNames && sheetNames.length > 1 && (
+                <p className="text-green-600 dark:text-green-300 text-sm">
+                  {sheetNames.length} 個のシートが見つかりました
+                </p>
+              )}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleReset}
+              className="text-green-700 hover:text-green-800"
+            >
+              削除
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* シート選択エリア（複数シートの場合のみ） */}
+      {file && sheetNames && sheetNames.length > 1 && !sheetSelectionConfirmed && (
+        <SheetSelector
+          sheetNames={sheetNames}
+          onSheetSelect={handleSheetSelect}
+          onBack={handleReset}
+        />
+      )}
+
+      {/* ファイル情報表示（シート選択後、データ範囲選択前） */}
+      {file && sheetSelectionConfirmed && !selectedRange && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 slide-in-right bounce-animation">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -349,7 +443,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
                 {file.name}
               </p>
               <p className="text-green-600 dark:text-green-300 text-sm">
-                {rawRows?.length || 0} 行のデータ
+                {selectedSheet ? `シート: ${selectedSheet} - ` : ''}{rawRows?.length || 0} 行のデータ
               </p>
             </div>
             <Button 
@@ -385,11 +479,11 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
       )}
 
       {/* データ領域選択 */}
-      {rawRows && !selectedRange && !loading && (
+      {rawRows && sheetSelectionConfirmed && !selectedRange && !loading && (
         <DataRangeSelector 
           rawRows={rawRows}
           onRangeSelect={handleRangeSelect}
-          onReset={onReset}
+          onReset={sheetNames && sheetNames.length > 1 ? handleBackToSheetSelection : onReset}
         />
       )}
 

@@ -188,7 +188,20 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           ...baseOptions.plugins,
           legend: {
             ...baseOptions.plugins.legend,
-            position: 'right'
+            position: 'right',
+            title: {
+              display: true,
+              text: generateAxisLabel(data?.yColumn || '値', yUnit),
+              color: 'rgb(75, 85, 99)',
+              font: {
+                size: 13,
+                weight: 'bold'
+              },
+              padding: {
+                top: 0,
+                bottom: 10
+              }
+            }
           }
         }
       }
@@ -231,7 +244,8 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
               size: 11
             },
             callback: function(value, index, ticks) {
-              return formatValueWithUnit(value, yUnit)
+              // 数値のみ表示（単位は軸タイトルに表示）
+              return value.toLocaleString()
             }
           },
           title: {
