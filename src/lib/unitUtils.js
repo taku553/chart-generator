@@ -45,10 +45,10 @@ export const UNIT_PRESETS = {
 }
 
 /**
- * スケール（基準値）のプリセット
+ * スケール(基準値)のプリセット
  */
 export const SCALE_PRESETS = [
-  { value: 1, label: 'そのまま (1)', multiplier: 1 },
+  { value: 1, label: 'そのまま', multiplier: 1 },
   { value: 10, label: '十 (10)', multiplier: 10 },
   { value: 100, label: '百 (100)', multiplier: 100 },
   { value: 1000, label: '千 (1,000)', multiplier: 1000 },
@@ -57,6 +57,9 @@ export const SCALE_PRESETS = [
   { value: 1000000, label: '百万 (1,000,000)', multiplier: 1000000 },
   { value: 10000000, label: '千万 (10,000,000)', multiplier: 10000000 },
   { value: 100000000, label: '億 (100,000,000)', multiplier: 100000000 },
+  { value: 1000000000, label: '十億 (1,000,000,000)', multiplier: 1000000000 },
+  { value: 10000000000, label: '百億 (10,000,000,000)', multiplier: 10000000000 },
+  { value: 100000000000, label: '千億 (100,000,000,000)', multiplier: 100000000000 },
 ]
 
 /**

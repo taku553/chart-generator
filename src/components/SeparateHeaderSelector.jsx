@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { HelpCircle, Check, X, Table2 } from 'lucide-react'
+import { HelpCircle, Check, X, Table2, Home } from 'lucide-react'
 import { DataRangeSelector } from '@/components/DataRangeSelector'
 
 export function SeparateHeaderSelector({ 
   rawRows, 
   dataRange,
   onHeaderRangeSelect,
-  onSkip 
+  onSkip,
+  onReset
 }) {
   const [useSeparateHeader, setUseSeparateHeader] = useState(null)
 
@@ -77,6 +78,18 @@ export function SeparateHeaderSelector({
               はい、別の場所にあります
             </Button>
           </div>
+          
+          {/* 最初に戻るボタン */}
+          {onReset && (
+            <Button 
+              variant="outline"
+              onClick={onReset}
+              className="w-full glass-button"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              最初に戻る
+            </Button>
+          )}
         </CardContent>
       </Card>
     )
@@ -107,6 +120,7 @@ export function SeparateHeaderSelector({
           rawRows={rawRows}
           mode="header"
           onRangeSelect={onHeaderRangeSelect}
+          onReset={onReset}
           initialRange={{
             startRow: 0,
             endRow: Math.min(5, rawRows.length - 1),

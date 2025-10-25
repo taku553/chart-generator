@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ChevronDown, Table2 } from 'lucide-react'
+import { ChevronDown, Table2, Home } from 'lucide-react'
 import { extractDataRange } from '@/lib/dataTransform'
 
-export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initialRange = null }) {
+export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initialRange = null, onReset }) {
   const [startRow, setStartRow] = useState(initialRange?.startRow ?? 0)
   const [endRow, setEndRow] = useState(initialRange?.endRow ?? Math.min(rawRows.length - 1, 19))
   const [startCol, setStartCol] = useState(initialRange?.startCol ?? 0)
@@ -253,6 +253,18 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
         >
           {mode === 'header' ? 'この範囲を列ヘッダーとして使用' : 'この範囲を使用してグラフを作成'}
         </Button>
+        
+        {/* 最初に戻るボタン */}
+        {onReset && (
+          <Button 
+            variant="outline"
+            onClick={onReset}
+            className="w-full glass-button mt-2"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            最初に戻る
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

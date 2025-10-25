@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ArrowDown, RotateCw } from 'lucide-react'
+import { ArrowRight, ArrowDown, RotateCw, Home } from 'lucide-react'
 import { transposeData } from '@/lib/dataTransform'
 
-export function DataOrientationSelector({ selectedData, onOrientationSelect }) {
+export function DataOrientationSelector({ selectedData, onOrientationSelect, onReset }) {
   const [showTransposed, setShowTransposed] = useState(false)
   
   // 転置データ
@@ -125,6 +125,18 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect }) {
             </div>
           </Button>
         </div>
+        
+        {/* 最初に戻るボタン */}
+        {onReset && (
+          <Button 
+            variant="outline"
+            onClick={onReset}
+            className="w-full glass-button"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            最初に戻る
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

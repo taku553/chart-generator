@@ -11,7 +11,7 @@ import { HeaderRangeSelector } from '@/components/HeaderRangeSelector.jsx'
 import { UnitSettings } from '@/components/UnitSettings.jsx'
 import { SeparateHeaderSelector } from '@/components/SeparateHeaderSelector.jsx'
 
-export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileData = null }) {
+export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileData = null, onReset }) {
   const [file, setFile] = useState(null)
   const [rawRows, setRawRows] = useState(null)
   const [selectedRange, setSelectedRange] = useState(null)
@@ -386,22 +386,11 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
 
       {/* データ領域選択 */}
       {rawRows && !selectedRange && !loading && (
-        <div className="space-y-4">
-          <DataRangeSelector 
-            rawRows={rawRows}
-            onRangeSelect={handleRangeSelect}
-          />
-          <div className="flex justify-start">
-            <Button 
-              variant="outline" 
-              className="glass-button"
-              onClick={handleReset}
-            >
-              <Home className="h-4 w-4 mr-2" />
-              最初に戻る
-            </Button>
-          </div>
-        </div>
+        <DataRangeSelector 
+          rawRows={rawRows}
+          onRangeSelect={handleRangeSelect}
+          onReset={onReset}
+        />
       )}
 
       {/* 列ヘッダー位置確認 */}
@@ -422,6 +411,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
             dataRange={selectedRange.range}
             onHeaderRangeSelect={handleHeaderRangeSelect}
             onSkip={handleSkipSeparateHeader}
+            onReset={onReset}
           />
         </div>
       )}
@@ -442,6 +432,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
           <DataOrientationSelector
             selectedData={selectedRange.data}
             onOrientationSelect={handleOrientationSelect}
+            onReset={onReset}
           />
         </div>
       )}
@@ -469,6 +460,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
           <HeaderRangeSelector
             processedData={processedDataForHeader}
             onHeaderRangeConfirm={handleHeaderRangeConfirm}
+            onReset={onReset}
           />
         </div>
       )}
@@ -584,6 +576,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
           sampleData={processedData.data}
           onConfirm={handleUnitConfirm}
           onBack={() => setAxisSelected(false)}
+          onReset={onReset}
         />
       )}
 

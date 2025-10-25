@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { FileUpload } from '@/components/FileUpload.jsx'
 import { ChartDisplay } from '@/components/ChartDisplay.jsx'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog.jsx'
 import './App.css'
 
 function App() {
@@ -8,6 +18,8 @@ function App() {
   const [chartType, setChartType] = useState('bar')
   const [uploadedFileData, setUploadedFileData] = useState(null)
   const [isReconfiguring, setIsReconfiguring] = useState(false)
+  const [showResetDialog, setShowResetDialog] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
 
   const handleDataLoaded = (chartData, fileData) => {
     setData(chartData)
@@ -22,6 +34,16 @@ function App() {
     setData(null)
     setUploadedFileData(null)
     setIsReconfiguring(false)
+    setResetKey(prev => prev + 1) // FileUploadコンポーネントを強制的に再マウント
+  }
+
+  const handleResetClick = () => {
+    setShowResetDialog(true)
+  }
+
+  const handleResetConfirm = () => {
+    handleReset()
+    setShowResetDialog(false)
   }
 
   const handleReconfigure = () => {
@@ -36,7 +58,7 @@ function App() {
         <div className="container mx-auto px-4 py-6">
           <h1 
             className="text-3xl font-bold gradient-text cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={handleReset}
+            onClick={data ? handleResetClick : handleReset}
           >
             Chart Generator
           </h1>
@@ -50,9 +72,11 @@ function App() {
       <main className="container mx-auto px-4 py-8">
         {!data ? (
           <FileUpload 
+            key={resetKey}
             onDataLoaded={handleDataLoaded}
             isReconfiguring={isReconfiguring}
             savedFileData={uploadedFileData}
+            onReset={handleResetClick}
           />
         ) : (
           <ChartDisplay 
@@ -71,6 +95,24 @@ function App() {
           <p>&copy; 2025 Chart Generator. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>設定を破棄しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              現在の設定をすべて破棄して最初に戻ります。この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetConfirm}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

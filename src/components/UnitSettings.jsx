@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Switch } from '@/components/ui/switch.jsx'
-import { ArrowLeft, Ruler, Eye, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Ruler, Eye, ChevronDown, ChevronUp, Home } from 'lucide-react'
 import { 
   UNIT_PRESETS, 
   SCALE_PRESETS, 
@@ -15,7 +15,7 @@ import {
   getScaleLabel 
 } from '@/lib/unitUtils.js'
 
-export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack }) {
+export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack, onReset }) {
   const [xUnitConfig, setXUnitConfig] = useState(getDefaultUnitConfig('x'))
   const [yUnitConfig, setYUnitConfig] = useState(getDefaultUnitConfig('y'))
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -130,7 +130,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-start">
+      <div className="flex justify-between">
         <Button 
           variant="outline" 
           className="glass-button"
@@ -139,6 +139,17 @@ export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack }
           <ArrowLeft className="h-4 w-4 mr-2" />
           前に戻る
         </Button>
+        
+        {onReset && (
+          <Button 
+            variant="outline" 
+            className="glass-button"
+            onClick={onReset}
+          >
+            <Home className="h-4 w-4 mr-2" />
+            最初に戻る
+          </Button>
+        )}
       </div>
 
       <Card className="glass-card fade-in">
@@ -230,8 +241,11 @@ export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack }
                   <span className="text-sm font-medium text-blue-900 dark:text-blue-100">プレビュー</span>
                 </div>
                 <div className="text-sm text-blue-800 dark:text-blue-200">
-                  データ値: {xSampleValue.toLocaleString()} → 
-                  表示: <strong>{formatValueWithUnit(xSampleValue, xUnitConfig)}</strong>
+                  データ値: {xSampleValue.toLocaleString()}
+                  {xUnitConfig.scale > 1 && (
+                    <> (× {xUnitConfig.scaleLabel || xUnitConfig.scale.toLocaleString()})</>
+                  )}
+                  {' '}→ 表示: <strong>{formatValueWithUnit(xSampleValue, xUnitConfig, true)}</strong>
                 </div>
               </div>
             )}
@@ -315,8 +329,11 @@ export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack }
                   <span className="text-sm font-medium text-blue-900 dark:text-blue-100">プレビュー</span>
                 </div>
                 <div className="text-sm text-blue-800 dark:text-blue-200">
-                  データ値: {ySampleValue.toLocaleString()} → 
-                  表示: <strong>{formatValueWithUnit(ySampleValue, yUnitConfig)}</strong>
+                  データ値: {ySampleValue.toLocaleString()}
+                  {yUnitConfig.scale > 1 && (
+                    <> (× {yUnitConfig.scaleLabel || yUnitConfig.scale.toLocaleString()})</>
+                  )}
+                  {' '}→ 表示: <strong>{formatValueWithUnit(ySampleValue, yUnitConfig, true)}</strong>
                 </div>
               </div>
             )}

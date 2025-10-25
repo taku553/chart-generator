@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Table2, CheckCircle2 } from 'lucide-react'
+import { Table2, CheckCircle2, Edit3, Home } from 'lucide-react'
 import { mergeHeaderRows, extractHeadersAndDataRows } from '@/lib/dataTransform'
 
-export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
+export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onReset }) {
   const [headerStartRow, setHeaderStartRow] = useState(0)
   const [headerEndRow, setHeaderEndRow] = useState(0)
   const [dataStartRow, setDataStartRow] = useState(1)
@@ -15,6 +15,9 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
   const [headerStartRowInput, setHeaderStartRowInput] = useState('1')
   const [headerEndRowInput, setHeaderEndRowInput] = useState('1')
   const [dataStartRowInput, setDataStartRowInput] = useState('2')
+  
+  // 編集されたヘッダー名を管理
+  const [editedHeaders, setEditedHeaders] = useState({})
 
   // プレビュー用のヘッダーとデータ
   const previewData = useMemo(() => {
@@ -26,16 +29,44 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
         dataStartRow
       )
       
+      // 編集されたヘッダー名を適用
+      const finalHeaders = headers.map((header, index) => 
+        editedHeaders[index] !== undefined ? editedHeaders[index] : header
+      )
+      
+      // editedHeadersを初期化（範囲が変更された時のみ）
+      if (Object.keys(editedHeaders).length === 0 && headers.length > 0) {
+        const initialEdits = {}
+        headers.forEach((header, index) => {
+          initialEdits[index] = header
+        })
+        setEditedHeaders(initialEdits)
+      }
+      
       // プレビューは最初の5行のみ
       return {
-        headers,
+        headers: finalHeaders,
+        originalHeaders: headers,
         data: data.slice(0, 5)
       }
     } catch (error) {
       console.error('Preview generation error:', error)
-      return { headers: [], data: [] }
+      return { headers: [], originalHeaders: [], data: [] }
     }
-  }, [processedData, headerStartRow, headerEndRow, dataStartRow])
+  }, [processedData, headerStartRow, headerEndRow, dataStartRow, editedHeaders])
+  
+  // 範囲が変更された時にeditedHeadersをリセット
+  useMemo(() => {
+    setEditedHeaders({})
+  }, [headerStartRow, headerEndRow, dataStartRow])
+  
+  // ヘッダー名の編集ハンドラー
+  const handleHeaderEdit = (index, newValue) => {
+    setEditedHeaders(prev => ({
+      ...prev,
+      [index]: newValue
+    }))
+  }
 
   // 確定処理
   const handleConfirm = () => {
@@ -46,8 +77,13 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
       dataStartRow
     )
     
+    // 編集されたヘッダー名を適用
+    const finalHeaders = headers.map((header, index) => 
+      editedHeaders[index] !== undefined ? editedHeaders[index] : header
+    )
+    
     onHeaderRangeConfirm({
-      headers,
+      headers: finalHeaders,
       data,
       headerRange: { headerStartRow, headerEndRow, dataStartRow }
     })
@@ -170,6 +206,44 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
           </div>
         </div>
 
+        {/* ヘッダー名編集エリア */}
+        {previewData.headers.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Edit3 className="h-4 w-4 text-blue-600" />
+              <Label className="text-base font-semibold">ヘッダー名の編集</Label>
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                💡 自動認識されたヘッダー名は自由に編集できます。複数行のヘッダーが結合されている場合など、必要に応じて修正してください。
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {previewData.headers.map((header, index) => (
+                <div key={index} className="space-y-2">
+                  <Label className="text-xs text-gray-600 dark:text-gray-400">
+                    列 {index + 1}
+                    {previewData.originalHeaders[index] !== header && (
+                      <span className="ml-2 text-blue-600 dark:text-blue-400">(編集済)</span>
+                    )}
+                  </Label>
+                  <Input
+                    value={header}
+                    onChange={(e) => handleHeaderEdit(index, e.target.value)}
+                    placeholder={`列${index + 1}の名前`}
+                    className="glass-button"
+                  />
+                  {previewData.originalHeaders[index] !== header && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      元: {previewData.originalHeaders[index]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* プレビューエリア */}
         <div className="space-y-2">
           <Label>プレビュー（最初の5行）</Label>
@@ -247,6 +321,18 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm }) {
             この設定で確定
           </Button>
         </div>
+        
+        {/* 最初に戻るボタン */}
+        {onReset && (
+          <Button 
+            variant="outline"
+            onClick={onReset}
+            className="w-full glass-button"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            最初に戻る
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
