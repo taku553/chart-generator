@@ -119,6 +119,55 @@ export const mergeHeaderRows = (data, headerStartRow, headerEndRow) => {
 }
 
 /**
+ * 複数列からデータ名（ラベル）を結合する
+ * @param {Array<Array<any>>} data - データ
+ * @param {number} labelStartCol - データ名開始列（0始まり）
+ * @param {number} labelEndCol - データ名終了列（0始まり）
+ * @returns {Array<string>} 結合されたデータ名配列
+ */
+export const mergeDataLabelColumns = (data, labelStartCol, labelEndCol) => {
+  if (!data || data.length === 0) return []
+  if (labelStartCol > labelEndCol) return []
+  
+  const labels = []
+  
+  for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+    const row = data[rowIndex]
+    
+    // 行全体が空かチェック
+    const isRowEmpty = !row || !row.some(cell => {
+      const cellValue = String(cell || '').trim()
+      return cellValue !== ''
+    })
+    
+    // 完全に空の行はスキップ
+    if (isRowEmpty) {
+      continue
+    }
+    
+    const labelParts = []
+    
+    for (let colIndex = labelStartCol; colIndex <= labelEndCol; colIndex++) {
+      const cell = row?.[colIndex]
+      const cellValue = String(cell || '').trim()
+      
+      if (cellValue !== '') {
+        labelParts.push(cellValue)
+      }
+    }
+    
+    // 結合：空でない部分をスペースで連結
+    const mergedLabel = labelParts.length > 0 
+      ? labelParts.join(' ') 
+      : `Row ${labels.length + 1}`
+    
+    labels.push(mergedLabel)
+  }
+  
+  return labels
+}
+
+/**
  * ヘッダー領域とデータ領域を分けて抽出する
  * @param {Array<Array<any>>} data - 全データ
  * @param {number} headerStartRow - ヘッダー開始行

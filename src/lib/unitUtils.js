@@ -230,6 +230,12 @@ export const getUnitFromPreset = (presetCategory, presetValue) => {
  * @returns {string} スケールラベル
  */
 export const getScaleLabel = (scaleValue) => {
+  // 基準値が1（そのまま）の場合は空文字列を返す
+  // これにより、グラフ表示時に単位のみが表示される（例: "円" であって "そのまま円" ではない）
+  if (scaleValue === 1) {
+    return ''
+  }
+  
   const preset = SCALE_PRESETS.find(p => p.value === scaleValue)
   if (!preset) return ''
   

@@ -8,6 +8,7 @@ import { processSelectedRange, combineHeaderAndDataRanges } from '@/lib/dataTran
 import { DataRangeSelector } from '@/components/DataRangeSelector.jsx'
 import { DataOrientationSelector } from '@/components/DataOrientationSelector.jsx'
 import { HeaderRangeSelector } from '@/components/HeaderRangeSelector.jsx'
+import { DataLabelRangeSelector } from '@/components/DataLabelRangeSelector.jsx'
 import { UnitSettings } from '@/components/UnitSettings.jsx'
 import { SeparateHeaderSelector } from '@/components/SeparateHeaderSelector.jsx'
 import { SheetSelector } from '@/components/SheetSelector.jsx'
@@ -25,6 +26,10 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
   const [processedDataForHeader, setProcessedDataForHeader] = useState(null)
   const [headerRangeConfirmed, setHeaderRangeConfirmed] = useState(false)
   const [processedData, setProcessedData] = useState(null)
+  const [dataRowsOnly, setDataRowsOnly] = useState(null) // ヘッダー除外後のデータ行のみ
+  const [dataLabels, setDataLabels] = useState(null)
+  const [labelRange, setLabelRange] = useState(null) // データラベル範囲情報
+  const [labelRangeConfirmed, setLabelRangeConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [xColumn, setXColumn] = useState('')
@@ -114,6 +119,10 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     setProcessedDataForHeader(null)
     setHeaderRangeConfirmed(false)
     setProcessedData(null)
+    setDataRowsOnly(null)
+    setDataLabels(null)
+    setLabelRange(null)
+    setLabelRangeConfirmed(false)
     setXColumn('')
     setYColumn('')
 
@@ -255,6 +264,9 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     })
     console.log('====================')
     
+    // データ行のみを配列形式で保存（データ名列範囲選択用）
+    setDataRowsOnly(data)
+    
     setProcessedData({ 
       headers, 
       data: formattedData,
@@ -271,6 +283,54 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
       setXColumn(headers[0])
       setYColumn(headers[headers.length - 1])
     }
+  }
+
+  // データラベル範囲確定後の処理（NEW）
+  const handleLabelRangeConfirm = ({ labels, labelRange: range, columnName }) => {
+    console.log('=== Label Range Confirm ===')
+    console.log('Labels:', labels)
+    console.log('Label range:', range)
+    console.log('Column name:', columnName)
+    
+    setDataLabels(labels)
+    setLabelRange(range)
+    
+    // processedDataを更新して、結合されたデータ名を新しい列として追加
+    if (processedData && labels && labels.length > 0) {
+      const mergedColumnName = columnName || 'データ名'
+      const updatedHeaders = [mergedColumnName, ...processedData.headers]
+      const updatedData = processedData.data.map((row, index) => {
+        return {
+          [mergedColumnName]: labels[index] || '',
+          ...row
+        }
+      })
+      
+      console.log('Updated headers:', updatedHeaders)
+      console.log('Updated data (first 3 rows):', updatedData.slice(0, 3))
+      
+      setProcessedData({
+        headers: updatedHeaders,
+        data: updatedData,
+        rowCount: updatedData.length
+      })
+      
+      // X軸のデフォルトを結合後の列名に設定
+      setXColumn(mergedColumnName)
+      
+      // Y軸はそのまま（数値列の最後）
+      if (processedData.headers.length > 0) {
+        setYColumn(processedData.headers[processedData.headers.length - 1])
+      }
+    }
+    
+    setLabelRangeConfirmed(true)
+  }  // データラベル範囲選択をスキップ
+  const handleSkipLabelRange = () => {
+    console.log('=== Skipping Label Range Selection ===')
+    setDataLabels(null)
+    setLabelRange(null)
+    setLabelRangeConfirmed(true)
   }
 
   // 軸選択確定処理
@@ -323,6 +383,10 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     setProcessedDataForHeader(null)
     setHeaderRangeConfirmed(false)
     setProcessedData(null)
+    setDataRowsOnly(null)
+    setDataLabels(null)
+    setLabelRange(null)
+    setLabelRangeConfirmed(false)
     setXColumn('')
     setYColumn('')
     setAxisSelected(false)
@@ -559,8 +623,8 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
         </div>
       )}
 
-      {/* 列選択エリア */}
-      {headerRangeConfirmed && processedData && processedData.headers.length >= 2 && !axisSelected && (
+      {/* データラベル列範囲選択（NEW） */}
+      {headerRangeConfirmed && dataRowsOnly && !labelRangeConfirmed && (
         <div className="space-y-4">
           <div className="flex justify-start">
             <Button 
@@ -569,6 +633,32 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
               onClick={() => {
                 setHeaderRangeConfirmed(false)
                 setProcessedData(null)
+                setDataRowsOnly(null)
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              前に戻る
+            </Button>
+          </div>
+          <DataLabelRangeSelector
+            processedData={dataRowsOnly}
+            onLabelRangeConfirm={handleLabelRangeConfirm}
+            onSkip={handleSkipLabelRange}
+            onReset={onReset}
+          />
+        </div>
+      )}
+
+      {/* 列選択エリア */}
+      {labelRangeConfirmed && processedData && processedData.headers.length >= 2 && !axisSelected && (
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={() => {
+                setLabelRangeConfirmed(false)
+                setDataLabels(null)
                 setXColumn('')
                 setYColumn('')
               }}
@@ -585,70 +675,108 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">横軸（X軸）</label>
-                <Select value={xColumn} onValueChange={setXColumn}>
-                  <SelectTrigger className="glass-button">
-                    <SelectValue placeholder="列を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {processedData.headers.map((header) => (
-                      <SelectItem key={header} value={header}>
-                        {header}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* 古い列を除外したヘッダーリストを作成 */}
+            {(() => {
+              let availableHeaders = processedData.headers
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium">縦軸（Y軸）</label>
-                <Select value={yColumn} onValueChange={setYColumn}>
-                  <SelectTrigger className="glass-button">
-                    <SelectValue placeholder="列を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {processedData.headers.map((header) => (
-                      <SelectItem key={header} value={header}>
-                        {header}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
+              // データラベル範囲が設定されている場合、その範囲の列を除外
+              if (labelRange) {
+                availableHeaders = processedData.headers.filter((header, index) => {
+                  // 最初の列は結合後の列なのでスキップ
+                  if (index === 0) return true
+                  
+                  // 元のインデックス（結合列を除く）
+                  const originalIndex = index - 1
+                  
+                  // labelRangeの範囲内の列は除外
+                  return originalIndex < labelRange.labelStartCol || 
+                         originalIndex > labelRange.labelEndCol
+                })
+              }
+              
+              return (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">横軸（X軸）</label>
+                      <Select value={xColumn} onValueChange={setXColumn}>
+                        <SelectTrigger className="glass-button">
+                          <SelectValue placeholder="列を選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableHeaders.map((header) => (
+                            <SelectItem key={header} value={header}>
+                              {header}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">縦軸（Y軸）</label>
+                      <Select value={yColumn} onValueChange={setYColumn}>
+                        <SelectTrigger className="glass-button">
+                          <SelectValue placeholder="列を選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableHeaders.map((header) => (
+                            <SelectItem key={header} value={header}>
+                              {header}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
+            
             {/* データプレビュー */}
-            {processedData && processedData.data.length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <thead className="bg-gray-50 dark:bg-gray-800">
-                      <tr>
-                        {processedData.headers.map((header) => (
-                          <th key={header} className="px-3 py-2 text-left font-medium">
-                            {header}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {processedData.data.slice(0, 3).map((row, index) => (
-                        <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
-                          {processedData.headers.map((header) => (
-                            <td key={header} className="px-3 py-2">
-                              {row[header]}
-                            </td>
+            {processedData && processedData.data.length > 0 && (() => {
+              // 軸選択と同じフィルタリングを適用
+              let availableHeaders = processedData.headers
+              
+              if (labelRange) {
+                availableHeaders = processedData.headers.filter((header, index) => {
+                  if (index === 0) return true
+                  const originalIndex = index - 1
+                  return originalIndex < labelRange.labelStartCol || 
+                         originalIndex > labelRange.labelEndCol
+                })
+              }
+              
+              return (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <thead className="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                          {availableHeaders.map((header) => (
+                            <th key={header} className="px-3 py-2 text-left font-medium">
+                              {header}
+                            </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {processedData.data.slice(0, 3).map((row, index) => (
+                          <tr key={index} className="border-t border-gray-200 dark:border-gray-700">
+                            {availableHeaders.map((header) => (
+                              <td key={header} className="px-3 py-2">
+                                {row[header]}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             <Button 
               className="w-full glass-button" 
