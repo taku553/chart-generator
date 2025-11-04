@@ -91,7 +91,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     return {
       labels: labels,
       datasets: [{
-        label: data.yColumn,
+        label: data.chartTitle || data.yColumn,
         data: values,
         backgroundColor: chartType === 'bar' ? colorPalettes.monochromeLight[0] : 'transparent',
         borderColor: colorPalettes.monochrome[0],
@@ -114,12 +114,14 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     const unitSettings = data?.unitSettings || {}
     const xUnit = unitSettings.x || {}
     const yUnit = unitSettings.y || {}
+    const displayTitle = data?.chartTitle || data?.yColumn || '値'
 
     const baseOptions = {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
+          display: false, // デフォルトの凡例を非表示
           position: 'top',
           labels: {
             color: 'rgb(107, 114, 128)',
@@ -129,6 +131,20 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
             },
             padding: 20,
             usePointStyle: true
+          }
+        },
+        title: {
+          display: true,
+          text: displayTitle,
+          color: 'rgb(0, 0, 0)',
+          font: {
+            size: 16,
+            weight: 'bold',
+            family: 'Inter, system-ui, sans-serif'
+          },
+          padding: {
+            top: 10,
+            bottom: 20
           }
         },
         tooltip: {
@@ -152,22 +168,13 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
               let label = ''
               
               if (chartType === 'pie') {
-                // 円グラフの場合
-                label = context.label || ''
-                if (label) {
-                  label += ': '
-                }
-                // 円グラフではcontext.parsedが数値
+                // 円グラフの場合: データ値のみ表示
                 const value = context.parsed
-                label += formatValueWithUnit(value, yUnit, true)
+                label = formatValueWithUnit(value, yUnit, true)
               } else {
-                // 棒グラフ・折れ線グラフの場合
-                label = context.dataset.label || ''
-                if (label) {
-                  label += ': '
-                }
+                // 棒グラフ・折れ線グラフの場合: データ値のみ表示（グラフタイトル名を除外）
                 if (context.parsed.y !== null && context.parsed.y !== undefined) {
-                  label += formatValueWithUnit(context.parsed.y, yUnit, true)
+                  label = formatValueWithUnit(context.parsed.y, yUnit, true)
                 }
               }
               return label
@@ -186,21 +193,31 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
         ...baseOptions,
         plugins: {
           ...baseOptions.plugins,
+          title: {
+            display: true,
+            text: displayTitle,
+            color: 'rgb(0, 0, 0)',
+            font: {
+              size: 16,
+              weight: 'bold',
+              family: 'Inter, system-ui, sans-serif'
+            },
+            padding: {
+              top: 10,
+              bottom: 20
+            }
+          },
           legend: {
-            ...baseOptions.plugins.legend,
+            display: true, // 円グラフは凡例を表示
             position: 'right',
-            title: {
-              display: true,
-              text: generateAxisLabel(data?.yColumn || '値', yUnit),
+            labels: {
               color: 'rgb(75, 85, 99)',
               font: {
-                size: 13,
-                weight: 'bold'
+                size: 12,
+                family: 'Inter, system-ui, sans-serif'
               },
-              padding: {
-                top: 0,
-                bottom: 10
-              }
+              padding: 10,
+              usePointStyle: true
             }
           }
         }

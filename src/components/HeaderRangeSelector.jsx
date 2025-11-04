@@ -82,10 +82,15 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
       editedHeaders[index] !== undefined ? editedHeaders[index] : header
     )
     
+    // 空欄のヘッダーがあるかチェック
+    const emptyHeaderCount = finalHeaders.filter(h => !h || h.trim() === '').length
+    
     onHeaderRangeConfirm({
       headers: finalHeaders,
       data,
-      headerRange: { headerStartRow, headerEndRow, dataStartRow }
+      headerRange: { headerStartRow, headerEndRow, dataStartRow },
+      hasEmptyHeaders: emptyHeaderCount > 0,
+      emptyHeaderCount
     })
   }
 
@@ -304,6 +309,24 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
             </ul>
           </div>
         </div>
+
+        {/* 警告メッセージ */}
+        {previewData.headers.some(h => !h || h.trim() === '') && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-600 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-yellow-600 text-xl">⚠️</span>
+              <div className="space-y-1">
+                <div className="font-semibold text-yellow-900 dark:text-yellow-100">
+                  空欄のヘッダーがあります
+                </div>
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  空欄の列はグラフ生成時に軸の選択肢として使用できません。
+                  このまま続けてもよろしいですか？必要であれば、空欄のヘッダーに名前を入力してください。
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 確定ボタン */}
         <div className="flex justify-end gap-3">

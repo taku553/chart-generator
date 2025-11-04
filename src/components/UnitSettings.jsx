@@ -15,10 +15,13 @@ import {
   getScaleLabel 
 } from '@/lib/unitUtils.js'
 
-export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack, onReset }) {
+export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm, onBack, onReset }) {
   const [xUnitConfig, setXUnitConfig] = useState(getDefaultUnitConfig('x'))
   const [yUnitConfig, setYUnitConfig] = useState(getDefaultUnitConfig('y'))
   const [showAdvanced, setShowAdvanced] = useState(false)
+  
+  // 有効なヘッダー（空欄でないもの）のみをフィルタリング
+  const validHeaders = headers ? headers.filter(h => h && h.trim() !== '') : []
 
   // X軸の単位タイプ変更
   const handleXUnitTypeChange = (unitType) => {
@@ -203,7 +206,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack, 
                     </SelectTrigger>
                     <SelectContent>
                       {UNIT_PRESETS[xUnitConfig.unitType]?.options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
+                        option.value && <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
                       ))}
@@ -291,7 +294,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack, 
                     </SelectTrigger>
                     <SelectContent>
                       {UNIT_PRESETS[yUnitConfig.unitType]?.options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
+                        option.value && <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
                       ))}
@@ -408,7 +411,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, onConfirm, onBack, 
             className="w-full glass-button bg-black text-white hover:bg-gray-800" 
             onClick={handleConfirmClick}
           >
-            単位設定を確定してグラフを生成
+            次へ：グラフタイトルを設定
           </Button>
         </CardContent>
       </Card>

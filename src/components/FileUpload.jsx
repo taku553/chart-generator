@@ -12,6 +12,7 @@ import { DataLabelRangeSelector } from '@/components/DataLabelRangeSelector.jsx'
 import { UnitSettings } from '@/components/UnitSettings.jsx'
 import { SeparateHeaderSelector } from '@/components/SeparateHeaderSelector.jsx'
 import { SheetSelector } from '@/components/SheetSelector.jsx'
+import { ChartTitleSettings } from '@/components/ChartTitleSettings.jsx'
 
 export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileData = null, onReset }) {
   const [file, setFile] = useState(null)
@@ -36,6 +37,8 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
   const [yColumn, setYColumn] = useState('')
   const [axisSelected, setAxisSelected] = useState(false)
   const [unitSettings, setUnitSettings] = useState(null)
+  const [chartTitle, setChartTitle] = useState('')
+  const [titleConfirmed, setTitleConfirmed] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [showSampleData, setShowSampleData] = useState(false)
   const [sampleData, setSampleData] = useState(null)
@@ -222,7 +225,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
   }
 
   // ヘッダー領域確定後の処理（NEW）
-  const handleHeaderRangeConfirm = ({ headers, data, headerRange }) => {
+  const handleHeaderRangeConfirm = ({ headers, data, headerRange, hasEmptyHeaders, emptyHeaderCount }) => {
     console.log('====================')
     console.log('=== Header Range Confirm ===')
     console.log('====================')
@@ -234,6 +237,11 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
       console.log(`  Row ${i}:`, row)
       console.log(`  Row ${i} length:`, row.length)
     })
+    
+    // 空欄ヘッダーの警告ログ
+    if (hasEmptyHeaders) {
+      console.warn(`⚠️ Warning: ${emptyHeaderCount} empty header(s) detected. These columns will be excluded from axis selection.`)
+    }
     
     // ヘッダーとデータを設定
     // 各行の長さをヘッダーの長さに合わせる
@@ -275,13 +283,16 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     
     setHeaderRangeConfirmed(true)
     
-    // デフォルトでX軸とY軸を設定
-    if (headers.length >= 2) {
+    // 有効なヘッダー（空欄でないもの）のみをフィルタリング
+    const validHeaders = headers.filter(h => h && h.trim() !== '')
+    
+    // デフォルトでX軸とY軸を設定（有効なヘッダーから）
+    if (validHeaders.length >= 2) {
       console.log('Setting default columns:')
-      console.log('  X-axis:', headers[0])
-      console.log('  Y-axis:', headers[headers.length - 1]) // 最後の列をY軸に
-      setXColumn(headers[0])
-      setYColumn(headers[headers.length - 1])
+      console.log('  X-axis:', validHeaders[0])
+      console.log('  Y-axis:', validHeaders[validHeaders.length - 1]) // 最後の列をY軸に
+      setXColumn(validHeaders[0])
+      setYColumn(validHeaders[validHeaders.length - 1])
     }
   }
 
@@ -342,18 +353,28 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
   // 単位設定確定後の処理
   const handleUnitConfirm = (units) => {
     setUnitSettings(units)
-    handleGenerateChart(units)
+    // グラフ生成ではなくタイトル設定画面へ
+  }
+
+  // グラフタイトル確定後の処理
+  const handleTitleConfirm = (title) => {
+    setChartTitle(title)
+    setTitleConfirmed(true)
+    handleGenerateChart(title)
   }
 
   // グラフ生成処理
-  const handleGenerateChart = (units = unitSettings) => {
+  const handleGenerateChart = (title = chartTitle) => {
     if (!processedData || !xColumn || !yColumn) return
 
     try {
       const chartData = transformDataForChart(processedData, xColumn, yColumn)
       
       // 単位設定を追加
-      chartData.unitSettings = units
+      chartData.unitSettings = unitSettings
+      
+      // グラフタイトルを追加
+      chartData.chartTitle = title
       
       // ファイルデータを保存して親に渡す（シート情報も含める）
       const fileData = {
@@ -391,6 +412,8 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     setYColumn('')
     setAxisSelected(false)
     setUnitSettings(null)
+    setChartTitle('')
+    setTitleConfirmed(false)
     setError(null)
     const fileInput = document.getElementById('file-input')
     if (fileInput) fileInput.value = ''
@@ -694,6 +717,9 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
                 })
               }
               
+              // 空欄のヘッダーを除外
+              availableHeaders = availableHeaders.filter(h => h && h.trim() !== '')
+              
               return (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -747,6 +773,9 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
                 })
               }
               
+              // 空欄のヘッダーを除外
+              availableHeaders = availableHeaders.filter(h => h && h.trim() !== '')
+              
               return (
                 <div className="mt-4">
                   <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
@@ -796,10 +825,33 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
           xColumn={xColumn}
           yColumn={yColumn}
           sampleData={processedData.data}
+          headers={processedData.headers}
           onConfirm={handleUnitConfirm}
           onBack={() => setAxisSelected(false)}
           onReset={onReset}
         />
+      )}
+
+      {/* グラフタイトル設定エリア */}
+      {unitSettings && !titleConfirmed && (
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={() => setUnitSettings(null)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              前に戻る
+            </Button>
+          </div>
+          <ChartTitleSettings
+            defaultTitle={yColumn}
+            onConfirm={handleTitleConfirm}
+            onBack={() => setUnitSettings(null)}
+            onReset={onReset}
+          />
+        </div>
       )}
 
       {/* サンプルデータ表示エリア */}
