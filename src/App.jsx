@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FileUpload } from '@/components/FileUpload.jsx'
 import { ChartDisplay } from '@/components/ChartDisplay.jsx'
+import { SocialLinks } from '@/components/SocialLinks.jsx'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -91,8 +92,11 @@ function App() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm mt-16">
-        <div className="container mx-auto px-4 py-6 text-center text-gray-600 dark:text-gray-300">
-          <p>&copy; 2025 Chart Generator. All rights reserved.</p>
+        <div className="container mx-auto px-4 py-6">
+          <SocialLinks />
+          <p className="text-center text-gray-600 dark:text-gray-300">
+            &copy; 2025 Chart Generator. All rights reserved.
+          </p>
         </div>
       </footer>
 
