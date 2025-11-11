@@ -57,12 +57,19 @@ function App() {
       {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">
-          <h1 
-            className="text-3xl font-bold gradient-text cursor-pointer hover:opacity-80 transition-opacity"
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity w-fit"
             onClick={data ? handleResetClick : handleReset}
           >
-            Chart Generator
-          </h1>
+            <img 
+              src="/logo.svg" 
+              alt="Grafico Logo" 
+              className="h-8 sm:h-10 w-auto"
+            />
+            <h1 className="text-2xl sm:text-3xl font-bold gradient-text">
+              Grafico
+            </h1>
+          </div>
           <p className="text-gray-600 dark:text-gray-300 mt-2">
             統計データから美しいグラフを生成
           </p>
@@ -95,7 +102,7 @@ function App() {
         <div className="container mx-auto px-4 py-6">
           <SocialLinks />
           <p className="text-center text-gray-600 dark:text-gray-300">
-            &copy; 2025 Chart Generator. All rights reserved.
+            &copy; 2025 Grafico. All rights reserved.
           </p>
         </div>
       </footer>
