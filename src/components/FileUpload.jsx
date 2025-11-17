@@ -675,7 +675,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
       {/* 列選択エリア */}
       {labelRangeConfirmed && processedData && processedData.headers.length >= 2 && !axisSelected && (
         <div className="space-y-4">
-          <div className="flex justify-start">
+          <div className="flex justify-between">
             <Button 
               variant="outline" 
               className="glass-button"
@@ -688,6 +688,15 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               前に戻る
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={onReset}
+            >
+              <Home className="h-4 w-4 mr-2" />
+              最初に戻る
             </Button>
           </div>
           <Card className="glass-card fade-in stagger-animation">
