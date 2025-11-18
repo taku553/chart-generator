@@ -40,24 +40,24 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     { id: 'pie', icon: PieChart, label: '円グラフ', component: Pie }
   ]
 
-  // モノクロ基調のカラーパレット
+  // Excel風スチールブルー系カラーパレット
   const colorPalettes = {
-    monochrome: [
-      'rgba(0, 0, 0, 0.8)',
-      'rgba(64, 64, 64, 0.8)',
-      'rgba(128, 128, 128, 0.8)',
-      'rgba(160, 160, 160, 0.8)',
-      'rgba(192, 192, 192, 0.8)',
-      'rgba(224, 224, 224, 0.8)'
+    // 円グラフ用: 複数色のパレット
+    excel: [
+      'rgba(68, 114, 196, 0.8)',   // ブルー
+      'rgba(237, 125, 49, 0.8)',   // オレンジ
+      'rgba(165, 165, 165, 0.8)',  // グレー
+      'rgba(255, 192, 0, 0.8)',    // イエロー
+      'rgba(91, 155, 213, 0.8)',   // ライトブルー
+      'rgba(112, 173, 71, 0.8)',   // グリーン
+      'rgba(38, 68, 120, 0.8)',    // ダークブルー
+      'rgba(158, 72, 14, 0.8)',    // ブラウン
+      'rgba(99, 99, 99, 0.8)',     // ダークグレー
+      'rgba(153, 115, 0, 0.8)'     // ダークイエロー
     ],
-    monochromeLight: [
-      'rgba(0, 0, 0, 0.1)',
-      'rgba(64, 64, 64, 0.1)',
-      'rgba(128, 128, 128, 0.1)',
-      'rgba(160, 160, 160, 0.1)',
-      'rgba(192, 192, 192, 0.1)',
-      'rgba(224, 224, 224, 0.1)'
-    ]
+    // 棒グラフ・折れ線グラフ用: スチールブルー単色
+    primary: 'rgba(68, 114, 196, 1)',      // 境界線・ライン用
+    primaryLight: 'rgba(68, 114, 196, 0.6)' // 塗りつぶし用
   }
 
   // グラフデータの準備
@@ -67,23 +67,29 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     const { labels, values, chartData } = data
 
     if (chartType === 'pie') {
-      // 円グラフの場合は集計データを使用
+      // 円グラフの場合は集計データを使用（上位10個 + その他）
       const pieData = aggregateDataForPieChart(
         chartData.map(item => ({ [data.xColumn]: item.label, [data.yColumn]: item.y })),
         data.xColumn,
-        data.yColumn
+        data.yColumn,
+        {
+          maxSlices: 10,        // 最大10個まで表示
+          minPercentage: 2,     // 2%未満は「その他」に統合
+          showOthers: true      // 「その他」を表示
+        }
       )
       
       return {
         labels: pieData.labels,
         datasets: [{
           data: pieData.values,
-          backgroundColor: colorPalettes.monochrome,
-          borderColor: colorPalettes.monochrome.map(color => color.replace('0.8', '1')),
+          backgroundColor: colorPalettes.excel,
+          borderColor: colorPalettes.excel.map(color => color.replace('0.8', '1')),
           borderWidth: 2,
-          hoverBackgroundColor: colorPalettes.monochrome.map(color => color.replace('0.8', '0.9')),
+          hoverBackgroundColor: colorPalettes.excel.map(color => color.replace('0.8', '0.95')),
           hoverBorderWidth: 3
-        }]
+        }],
+        pieData // 「その他」の詳細情報用に保持
       }
     }
 
@@ -93,18 +99,18 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
       datasets: [{
         label: data.chartTitle || data.yColumn,
         data: values,
-        backgroundColor: chartType === 'bar' ? colorPalettes.monochromeLight[0] : 'transparent',
-        borderColor: colorPalettes.monochrome[0],
+        backgroundColor: chartType === 'bar' ? colorPalettes.primaryLight : 'transparent',
+        borderColor: colorPalettes.primary,
         borderWidth: 2,
         fill: chartType === 'line' ? false : true,
         tension: chartType === 'line' ? 0.4 : 0,
-        pointBackgroundColor: chartType === 'line' ? colorPalettes.monochrome[0] : undefined,
+        pointBackgroundColor: chartType === 'line' ? colorPalettes.primary : undefined,
         pointBorderColor: chartType === 'line' ? '#ffffff' : undefined,
         pointBorderWidth: chartType === 'line' ? 2 : undefined,
         pointRadius: chartType === 'line' ? 6 : undefined,
         pointHoverRadius: chartType === 'line' ? 8 : undefined,
-        hoverBackgroundColor: colorPalettes.monochrome[1],
-        hoverBorderColor: colorPalettes.monochrome[0]
+        hoverBackgroundColor: chartType === 'bar' ? 'rgba(68, 114, 196, 0.8)' : undefined,
+        hoverBorderColor: colorPalettes.primary
       }]
     }
   }
@@ -168,9 +174,16 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
               let label = ''
               
               if (chartType === 'pie') {
-                // 円グラフの場合: データ値のみ表示
+                // 円グラフの場合: データ値とパーセンテージを表示
                 const value = context.parsed
-                label = formatValueWithUnit(value, yUnit, true)
+                const dataIndex = context.dataIndex
+                const chartData = context.chart.data
+                const total = chartData.datasets[0].data.reduce((sum, val) => sum + val, 0)
+                const percentage = ((value / total) * 100).toFixed(1)
+                
+                label = `${formatValueWithUnit(value, yUnit, true)} (${percentage}%)`
+                
+                return label
               } else {
                 // 棒グラフ・折れ線グラフの場合: データ値のみ表示（グラフタイトル名を除外）
                 if (context.parsed.y !== null && context.parsed.y !== undefined) {
@@ -178,6 +191,21 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                 }
               }
               return label
+            },
+            afterLabel: function(context) {
+              // 円グラフで「その他」の場合、含まれる項目の詳細を表示
+              if (chartType === 'pie' && context.label === 'その他') {
+                const pieData = prepareChartData()?.pieData
+                if (pieData?.hasOthers) {
+                  const othersItem = pieData.chartData.find(item => item.isOthers)
+                  if (othersItem) {
+                    const itemsPreview = othersItem.items.slice(0, 5).join(', ')
+                    const moreText = othersItem.items.length > 5 ? ` 他${othersItem.items.length - 5}件` : ''
+                    return `\n含まれる項目 (${othersItem.itemCount}件):\n${itemsPreview}${moreText}`
+                  }
+                }
+              }
+              return ''
             }
           }
         }
@@ -306,9 +334,21 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     }
   }
 
+  // データ数に応じた最小幅を計算する関数
+  const calculateMinWidth = (dataCount) => {
+    // データ1つあたり40px以上確保、最小800px
+    const minWidthPerData = 40 // px
+    return Math.max(800, dataCount * minWidthPerData)
+  }
+
   const chartData = prepareChartData()
   const chartOptions = getChartOptions()
   const ChartComponent = chartTypes.find(type => type.id === chartType)?.component
+  
+  // 棒グラフと折れ線グラフの場合のみ動的幅を計算
+  const minChartWidth = ['bar', 'line'].includes(chartType) 
+    ? calculateMinWidth(data.chartData?.length || 0)
+    : null
 
   if (!data || !chartData || !ChartComponent) {
     return (
@@ -362,8 +402,14 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="chart-container p-6 shadow-inner">
-            <div className="h-96 w-full">
+          <div className="chart-container p-6 shadow-inner overflow-x-auto">
+            <div 
+              className="h-96" 
+              style={{ 
+                minWidth: minChartWidth ? `${minChartWidth}px` : '100%',
+                width: minChartWidth ? `${minChartWidth}px` : '100%'
+              }}
+            >
               <ChartComponent
                 ref={chartRef}
                 data={chartData}

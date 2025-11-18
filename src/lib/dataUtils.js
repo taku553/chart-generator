@@ -396,11 +396,22 @@ export const transformDataForChart = (processedData, xColumn, yColumn) => {
  * @param {Array} data - データ配列
  * @param {string} labelColumn - ラベル列
  * @param {string} valueColumn - 値列
+ * @param {Object} options - オプション設定
+ * @param {number} options.maxSlices - 最大表示スライス数（その他を除く）
+ * @param {number} options.minPercentage - 最小表示パーセンテージ（この値未満は「その他」に統合）
+ * @param {boolean} options.showOthers - 「その他」を表示するか
  * @returns {Object} 円グラフ用データ
  */
-export const aggregateDataForPieChart = (data, labelColumn, valueColumn) => {
+export const aggregateDataForPieChart = (data, labelColumn, valueColumn, options = {}) => {
+  const {
+    maxSlices = 10,
+    minPercentage = 2,
+    showOthers = true
+  } = options
+  
   const aggregated = {}
   
+  // データを集計
   data.forEach(row => {
     const label = row[labelColumn]
     const value = parseNumericValue(row[valueColumn])
@@ -410,16 +421,64 @@ export const aggregateDataForPieChart = (data, labelColumn, valueColumn) => {
     }
   })
   
-  const labels = Object.keys(aggregated)
-  const values = Object.values(aggregated)
+  // ラベルと値の配列を作成し、値で降順ソート
+  let chartData = Object.entries(aggregated)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+  
+  // 合計値を計算
+  const totalValue = chartData.reduce((sum, item) => sum + item.value, 0)
+  
+  // フィルタリング処理
+  let mainData = []
+  let othersData = []
+  
+  if (showOthers && chartData.length > maxSlices) {
+    // パーセンテージ閾値でフィルタリング
+    chartData.forEach((item, index) => {
+      const percentage = (item.value / totalValue) * 100
+      
+      // 上位maxSlices個以内かつminPercentage以上のデータを表示
+      if (index < maxSlices && percentage >= minPercentage) {
+        mainData.push(item)
+      } else {
+        othersData.push(item)
+      }
+    })
+    
+    // 「その他」が存在する場合
+    if (othersData.length > 0) {
+      const othersValue = othersData.reduce((sum, item) => sum + item.value, 0)
+      const othersPercentage = (othersValue / totalValue) * 100
+      
+      // 「その他」が存在し、かつ意味のある値（0.1%以上）の場合のみ追加
+      if (othersPercentage >= 0.1) {
+        mainData.push({
+          label: 'その他',
+          value: othersValue,
+          isOthers: true,
+          itemCount: othersData.length,
+          items: othersData.map(item => item.label)
+        })
+      } else {
+        // 「その他」が無視できるほど小さい場合は、メインデータに統合
+        mainData = [...mainData, ...othersData]
+      }
+    }
+  } else {
+    // データ数が少ない場合はすべて表示
+    mainData = chartData
+  }
+  
+  const labels = mainData.map(item => item.label)
+  const values = mainData.map(item => item.value)
   
   return {
     labels,
     values,
-    chartData: labels.map((label, index) => ({
-      label,
-      value: values[index]
-    }))
+    chartData: mainData,
+    totalValue,
+    hasOthers: mainData.some(item => item.isOthers)
   }
 }
 
