@@ -1,4 +1,10 @@
 export const updates = [
+    {
+    id: 3,
+    date: '2025.11.20',
+    title: 'ログイン機能を実装しました',
+    description: 'Firebase Authenticationを使って、メールアドレスとGoogleアカウントからのログインができるようにしました。',
+  }, 
   {
     id: 2,
     date: '2025.11.18',

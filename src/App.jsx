@@ -1,8 +1,10 @@
 import { Routes, Route } from 'react-router-dom'
 import { Header } from '@/components/Header.jsx'
 import { SocialLinks } from '@/components/SocialLinks.jsx'
+import { ProtectedRoute } from '@/components/ProtectedRoute.jsx'
 import { Home } from '@/pages/Home.jsx'
 import { UpdatesPage } from '@/pages/UpdatesPage.jsx'
+import { MyPage } from '@/pages/MyPage.jsx'
 import './App.css'
 
 function App() {
@@ -13,6 +15,14 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/updates" element={<UpdatesPage />} />
+        <Route
+          path="/mypage"
+          element={
+            <ProtectedRoute>
+              <MyPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
       {/* Footer */}
