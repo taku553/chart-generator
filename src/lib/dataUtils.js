@@ -249,9 +249,10 @@ export const inferHeaderRow = (rawRows) => {
 /**
  * データを数値型に変換する
  * @param {string} value - 変換する値
+ * @param {string} parenthesesMode - 括弧の解釈方法 ('positive': 正の数, 'negative': 負の数)
  * @returns {number|string} 数値または元の文字列
  */
-export const parseNumericValue = (value) => {
+export const parseNumericValue = (value, parenthesesMode = 'positive') => {
   if (typeof value === 'number') return value
   if (typeof value !== 'string') return value
   
@@ -269,6 +270,37 @@ export const parseNumericValue = (value) => {
     cleanValue = cleanValue.replace(/[△▲]/g, '')
   }
   
+  // 括弧付き数字の処理
+  // パターン1: 数字全体が両側の括弧で囲まれている場合 "(1,000)" や "（1,000）"
+  const fullParenthesesMatch = cleanValue.match(/^[\(（]\s*([\d,.\s]+)\s*[\)）]$/)
+  if (fullParenthesesMatch) {
+    cleanValue = fullParenthesesMatch[1]  // 括弧内の数値部分を取得
+    // parenthesesMode が 'negative' の場合のみ負数として扱う
+    if (parenthesesMode === 'negative') {
+      isNegative = true
+    }
+  } else {
+    // パターン2: 片側の括弧のみの場合（複数セルに跨る括弧）
+    // 左括弧のみ: "( 4 326 506" や "（4326506"
+    if (/^[\(（]\s*[\d,.\s]+$/.test(cleanValue)) {
+      cleanValue = cleanValue.replace(/^[\(（]\s*/, '')
+      if (parenthesesMode === 'negative') {
+        isNegative = true
+      }
+    }
+    // 右括弧のみ: "4 326 506 )" や "4326506）"
+    else if (/^[\d,.\s]+\s*[\)）]$/.test(cleanValue)) {
+      cleanValue = cleanValue.replace(/\s*[\)）]$/, '')
+      if (parenthesesMode === 'negative') {
+        isNegative = true
+      }
+    }
+    // パターン3: 先頭に番号表記がある場合 "1)" や "(1)" など（半角・全角対応）
+    else {
+      cleanValue = cleanValue.replace(/^[\(（]?[0-9０-９]+[\)）]\s*/, '')
+    }
+  }
+  
   // カンマとスペースを除去
   cleanValue = cleanValue.replace(/[\s,]/g, '')
   
@@ -277,7 +309,7 @@ export const parseNumericValue = (value) => {
   
   // 有効な数値の場合
   if (!isNaN(numValue)) {
-    // △があった場合はマイナスにする
+    // △があった場合やparenthesesModeがnegativeでカッコがあった場合はマイナスにする
     return isNegative ? -numValue : numValue
   }
   
@@ -286,16 +318,43 @@ export const parseNumericValue = (value) => {
 }
 
 /**
+ * データに括弧で囲まれた数字が含まれているかを検出する
+ * @param {Array} values - 値の配列
+ * @returns {Object} { hasParentheses: boolean, examples: Array<string> }
+ */
+export const detectParenthesesInData = (values) => {
+  const examples = []
+  let hasParentheses = false
+  
+  // 数字全体が括弧で囲まれているパターンを検出
+  const fullParenthesesPattern = /^[\(（]\s*[\d,.\s]+\s*[\)）]$/
+  
+  for (let i = 0; i < values.length && examples.length < 3; i++) {
+    const value = String(values[i] || '').trim()
+    if (value && fullParenthesesPattern.test(value)) {
+      hasParentheses = true
+      examples.push(value)
+    }
+  }
+  
+  return {
+    hasParentheses,
+    examples
+  }
+}
+
+/**
  * データの型を推定する
  * @param {Array} values - 値の配列
+ * @param {string} parenthesesMode - 括弧の解釈方法
  * @returns {string} 'numeric' | 'categorical'
  */
-export const inferDataType = (values) => {
+export const inferDataType = (values, parenthesesMode = 'positive') => {
   let numericCount = 0
   const sampleSize = Math.min(values.length, 10) // 最初の10個をサンプルとして使用
   
   for (let i = 0; i < sampleSize; i++) {
-    const parsed = parseNumericValue(values[i])
+    const parsed = parseNumericValue(values[i], parenthesesMode)
     if (typeof parsed === 'number' && !isNaN(parsed)) {
       numericCount++
     }
@@ -310,14 +369,16 @@ export const inferDataType = (values) => {
  * @param {Object} processedData - 生データ
  * @param {string} xColumn - X軸の列名
  * @param {string} yColumn - Y軸の列名
+ * @param {string} parenthesesMode - 括弧の解釈方法 ('positive' | 'negative')
  * @returns {Object} グラフ用データ
  */
-export const transformDataForChart = (processedData, xColumn, yColumn) => {
+export const transformDataForChart = (processedData, xColumn, yColumn, parenthesesMode = 'positive') => {
   console.log('====================')
   console.log('=== transformDataForChart START ===')
   console.log('====================')
   console.log('xColumn:', xColumn)
   console.log('yColumn:', yColumn)
+  console.log('parenthesesMode:', parenthesesMode)
   console.log('processedData.headers:', processedData.headers)
   console.log('processedData.data.length:', processedData.data.length)
   
@@ -339,8 +400,8 @@ export const transformDataForChart = (processedData, xColumn, yColumn) => {
   console.log('yValues (first 5):', yValues.slice(0, 5))
   
   // データ型を推定
-  const xType = inferDataType(xValues)
-  const yType = inferDataType(yValues)
+  const xType = inferDataType(xValues, parenthesesMode)
+  const yType = inferDataType(yValues, parenthesesMode)
   
   console.log('---')
   console.log('xType:', xType)
@@ -351,8 +412,8 @@ export const transformDataForChart = (processedData, xColumn, yColumn) => {
     const xRaw = row[xColumn]
     const yRaw = row[yColumn]
     
-    const xValue = xType === 'numeric' ? parseNumericValue(xRaw) : xRaw
-    const yValue = yType === 'numeric' ? parseNumericValue(yRaw) : yRaw
+    const xValue = xType === 'numeric' ? parseNumericValue(xRaw, parenthesesMode) : xRaw
+    const yValue = yType === 'numeric' ? parseNumericValue(yRaw, parenthesesMode) : yRaw
     
     if (index < 5) {
       console.log(`---`)
@@ -400,13 +461,15 @@ export const transformDataForChart = (processedData, xColumn, yColumn) => {
  * @param {number} options.maxSlices - 最大表示スライス数（その他を除く）
  * @param {number} options.minPercentage - 最小表示パーセンテージ（この値未満は「その他」に統合）
  * @param {boolean} options.showOthers - 「その他」を表示するか
+ * @param {string} options.parenthesesMode - 括弧の解釈方法
  * @returns {Object} 円グラフ用データ
  */
 export const aggregateDataForPieChart = (data, labelColumn, valueColumn, options = {}) => {
   const {
     maxSlices = 10,
     minPercentage = 2,
-    showOthers = true
+    showOthers = true,
+    parenthesesMode = 'positive'
   } = options
   
   const aggregated = {}
@@ -414,7 +477,7 @@ export const aggregateDataForPieChart = (data, labelColumn, valueColumn, options
   // データを集計
   data.forEach(row => {
     const label = row[labelColumn]
-    const value = parseNumericValue(row[valueColumn])
+    const value = parseNumericValue(row[valueColumn], parenthesesMode)
     
     if (typeof value === 'number' && !isNaN(value)) {
       aggregated[label] = (aggregated[label] || 0) + value

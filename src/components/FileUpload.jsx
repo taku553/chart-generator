@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
 import { Upload, FileText, AlertCircle, CheckCircle2, Table, ArrowLeft, Home } from 'lucide-react'
-import { parseFile, transformDataForChart } from '@/lib/dataUtils.js'
+import { parseFile, transformDataForChart, detectParenthesesInData } from '@/lib/dataUtils.js'
 import { processSelectedRange, combineHeaderAndDataRanges } from '@/lib/dataTransform.js'
 import { DataRangeSelector } from '@/components/DataRangeSelector.jsx'
 import { DataOrientationSelector } from '@/components/DataOrientationSelector.jsx'
@@ -13,8 +13,9 @@ import { UnitSettings } from '@/components/UnitSettings.jsx'
 import { SeparateHeaderSelector } from '@/components/SeparateHeaderSelector.jsx'
 import { SheetSelector } from '@/components/SheetSelector.jsx'
 import { ChartTitleSettings } from '@/components/ChartTitleSettings.jsx'
+import { ParenthesesInterpretationSelector } from '@/components/ParenthesesInterpretationSelector.jsx'
 
-export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileData = null, onReset }) {
+export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfiguration = null, onReset }) {
   const [file, setFile] = useState(null)
   const [sheetNames, setSheetNames] = useState(null)
   const [selectedSheet, setSelectedSheet] = useState(null)
@@ -36,6 +37,10 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
   const [xColumn, setXColumn] = useState('')
   const [yColumn, setYColumn] = useState('')
   const [axisSelected, setAxisSelected] = useState(false)
+  const [parenthesesMode, setParenthesesMode] = useState('positive')
+  const [parenthesesDetected, setParenthesesDetected] = useState(false)
+  const [parenthesesExamples, setParenthesesExamples] = useState([])
+  const [parenthesesConfirmed, setParenthesesConfirmed] = useState(false)
   const [unitSettings, setUnitSettings] = useState(null)
   const [chartTitle, setChartTitle] = useState('')
   const [titleConfirmed, setTitleConfirmed] = useState(false)
@@ -69,19 +74,105 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
 
   // 再設定モードの処理
   useEffect(() => {
-    if (isReconfiguring && savedFileData) {
-      setFile(savedFileData.file)
-      setRawRows(savedFileData.rawRows)
-      setSheetNames(savedFileData.sheetNames)
-      setSelectedSheet(savedFileData.selectedSheet)
-      // シート選択は完了済みとしてマーク
-      if (!savedFileData.sheetNames || savedFileData.sheetNames.length <= 1) {
+    if (isReconfiguring && savedConfiguration) {
+      // ファイル情報を復元
+      setFile(savedConfiguration.file)
+      setRawRows(savedConfiguration.rawRows)
+      setSheetNames(savedConfiguration.sheetNames)
+      setSelectedSheet(savedConfiguration.selectedSheet)
+      
+      // シート選択状態を復元
+      if (!savedConfiguration.sheetNames || savedConfiguration.sheetNames.length <= 1) {
         setSheetSelectionConfirmed(true)
+      } else {
+        setSheetSelectionConfirmed(savedConfiguration.sheetSelectionConfirmed || false)
       }
+      
+      // データ範囲を復元
+      if (savedConfiguration.selectedRange) {
+        setSelectedRange(savedConfiguration.selectedRange)
+      }
+      
+      // ヘッダー設定を復元
+      if (savedConfiguration.separateHeaderConfirmed !== undefined) {
+        setSeparateHeaderConfirmed(savedConfiguration.separateHeaderConfirmed)
+      }
+      if (savedConfiguration.headerRange) {
+        setHeaderRange(savedConfiguration.headerRange)
+      }
+      
+      // データ方向を復元
+      if (savedConfiguration.orientationConfirmed) {
+        setOrientationConfirmed(savedConfiguration.orientationConfirmed)
+      }
+      if (savedConfiguration.processedDataForHeader) {
+        setProcessedDataForHeader(savedConfiguration.processedDataForHeader)
+      }
+      
+      // ヘッダー範囲を復元
+      if (savedConfiguration.headerRangeConfirmed) {
+        setHeaderRangeConfirmed(savedConfiguration.headerRangeConfirmed)
+      }
+      if (savedConfiguration.processedData) {
+        setProcessedData(savedConfiguration.processedData)
+      }
+      if (savedConfiguration.dataRowsOnly) {
+        setDataRowsOnly(savedConfiguration.dataRowsOnly)
+      }
+      
+      // データラベル範囲を復元
+      if (savedConfiguration.labelRangeConfirmed !== undefined) {
+        setLabelRangeConfirmed(savedConfiguration.labelRangeConfirmed)
+      }
+      if (savedConfiguration.dataLabels) {
+        setDataLabels(savedConfiguration.dataLabels)
+      }
+      if (savedConfiguration.labelRange) {
+        setLabelRange(savedConfiguration.labelRange)
+      }
+      
+      // 軸設定を復元
+      if (savedConfiguration.xColumn) {
+        setXColumn(savedConfiguration.xColumn)
+      }
+      if (savedConfiguration.yColumn) {
+        setYColumn(savedConfiguration.yColumn)
+      }
+      if (savedConfiguration.axisSelected) {
+        setAxisSelected(savedConfiguration.axisSelected)
+      }
+      
+      // 括弧解釈設定を復元
+      if (savedConfiguration.parenthesesMode) {
+        setParenthesesMode(savedConfiguration.parenthesesMode)
+      }
+      if (savedConfiguration.parenthesesDetected !== undefined) {
+        setParenthesesDetected(savedConfiguration.parenthesesDetected)
+      }
+      if (savedConfiguration.parenthesesExamples) {
+        setParenthesesExamples(savedConfiguration.parenthesesExamples)
+      }
+      if (savedConfiguration.parenthesesConfirmed !== undefined) {
+        setParenthesesConfirmed(savedConfiguration.parenthesesConfirmed)
+      }
+      
+      // 単位設定を復元
+      if (savedConfiguration.unitSettings) {
+        setUnitSettings(savedConfiguration.unitSettings)
+      }
+      
+      // タイトル設定を復元
+      if (savedConfiguration.chartTitle) {
+        setChartTitle(savedConfiguration.chartTitle)
+      }
+      if (savedConfiguration.titleConfirmed !== undefined) {
+        setTitleConfirmed(savedConfiguration.titleConfirmed)
+      }
+      
       setError(null)
       setLoading(false)
     }
-  }, [isReconfiguring, savedFileData])
+  }, [isReconfiguring, savedConfiguration])
 
   // ドラッグ&ドロップ処理
   const handleDrag = useCallback((e) => {
@@ -347,7 +438,28 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
   // 軸選択確定処理
   const handleAxisSelect = () => {
     if (!xColumn || !yColumn) return
+    
+    // Y軸データに括弧付き数字が含まれているか検出
+    const yValues = processedData.data.map(row => row[yColumn])
+    const detection = detectParenthesesInData(yValues)
+    
+    if (detection.hasParentheses) {
+      setParenthesesDetected(true)
+      setParenthesesExamples(detection.examples)
+      // 括弧検出時は括弧解釈設定画面へ
+    } else {
+      // 括弧なしの場合はスキップ
+      setParenthesesDetected(false)
+      setParenthesesConfirmed(true)
+    }
+    
     setAxisSelected(true)
+  }
+  
+  // 括弧解釈設定確定後の処理
+  const handleParenthesesConfirm = (mode) => {
+    setParenthesesMode(mode)
+    setParenthesesConfirmed(true)
   }
 
   // 単位設定確定後の処理
@@ -368,7 +480,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     if (!processedData || !xColumn || !yColumn) return
 
     try {
-      const chartData = transformDataForChart(processedData, xColumn, yColumn)
+      const chartData = transformDataForChart(processedData, xColumn, yColumn, parenthesesMode)
       
       // 単位設定を追加
       chartData.unitSettings = unitSettings
@@ -376,15 +488,56 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
       // グラフタイトルを追加
       chartData.chartTitle = title
       
-      // ファイルデータを保存して親に渡す（シート情報も含める）
-      const fileData = {
+      // すべての設定内容を保存して親に渡す
+      const configuration = {
+        // ファイル情報
         file: file,
         rawRows: rawRows,
         sheetNames: sheetNames,
-        selectedSheet: selectedSheet
+        selectedSheet: selectedSheet,
+        sheetSelectionConfirmed: sheetSelectionConfirmed,
+        
+        // データ範囲
+        selectedRange: selectedRange,
+        
+        // ヘッダー設定
+        separateHeaderConfirmed: separateHeaderConfirmed,
+        headerRange: headerRange,
+        
+        // データ方向
+        orientationConfirmed: orientationConfirmed,
+        processedDataForHeader: processedDataForHeader,
+        
+        // ヘッダー範囲
+        headerRangeConfirmed: headerRangeConfirmed,
+        processedData: processedData,
+        dataRowsOnly: dataRowsOnly,
+        
+        // データラベル範囲
+        labelRange: labelRange,
+        labelRangeConfirmed: labelRangeConfirmed,
+        dataLabels: dataLabels,
+        
+        // 軸設定
+        xColumn: xColumn,
+        yColumn: yColumn,
+        axisSelected: axisSelected,
+        
+        // 括弧解釈設定
+        parenthesesMode: parenthesesMode,
+        parenthesesDetected: parenthesesDetected,
+        parenthesesExamples: parenthesesExamples,
+        parenthesesConfirmed: parenthesesConfirmed,
+        
+        // 単位設定
+        unitSettings: unitSettings,
+        
+        // タイトル設定
+        chartTitle: title,
+        titleConfirmed: titleConfirmed
       }
       
-      onDataLoaded(chartData, fileData)
+      onDataLoaded(chartData, configuration)
     } catch (err) {
       setError('グラフデータの変換中にエラーが発生しました')
     }
@@ -411,6 +564,10 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
     setXColumn('')
     setYColumn('')
     setAxisSelected(false)
+    setParenthesesMode('positive')
+    setParenthesesDetected(false)
+    setParenthesesExamples([])
+    setParenthesesConfirmed(false)
     setUnitSettings(null)
     setChartTitle('')
     setTitleConfirmed(false)
@@ -828,15 +985,52 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedFileDat
         </div>
       )}
 
+      {/* 括弧解釈設定エリア */}
+      {axisSelected && parenthesesDetected && !parenthesesConfirmed && (
+        <div className="space-y-4">
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              className="glass-button"
+              onClick={() => {
+                setAxisSelected(false)
+                setParenthesesDetected(false)
+                setParenthesesExamples([])
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              前に戻る
+            </Button>
+          </div>
+          <ParenthesesInterpretationSelector
+            examples={parenthesesExamples}
+            defaultMode={parenthesesMode}
+            onConfirm={handleParenthesesConfirm}
+            onBack={() => {
+              setAxisSelected(false)
+              setParenthesesDetected(false)
+              setParenthesesExamples([])
+            }}
+            onReset={onReset}
+          />
+        </div>
+      )}
+
       {/* 単位設定エリア */}
-      {axisSelected && !unitSettings && (
+      {axisSelected && parenthesesConfirmed && !unitSettings && (
         <UnitSettings
           xColumn={xColumn}
           yColumn={yColumn}
           sampleData={processedData.data}
           headers={processedData.headers}
           onConfirm={handleUnitConfirm}
-          onBack={() => setAxisSelected(false)}
+          onBack={() => {
+            if (parenthesesDetected) {
+              setParenthesesConfirmed(false)
+            } else {
+              setAxisSelected(false)
+            }
+          }}
           onReset={onReset}
         />
       )}

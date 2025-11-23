@@ -75,7 +75,8 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
         {
           maxSlices: 10,        // 最大10個まで表示
           minPercentage: 2,     // 2%未満は「その他」に統合
-          showOthers: true      // 「その他」を表示
+          showOthers: true,     // 「その他」を表示
+          parenthesesMode: data.parenthesesMode || 'positive' // 括弧解釈モードを渡す
         }
       )
       
@@ -322,11 +323,27 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     }
   }
 
-  // グラフのダウンロード機能
+  // グラフのダウンロード機能（白背景で出力）
   const handleDownload = () => {
     if (chartRef.current) {
-      const canvas = chartRef.current.canvas
-      const url = canvas.toDataURL('image/png')
+      const originalCanvas = chartRef.current.canvas
+      
+      // オフスクリーンキャンバスを作成
+      const offscreenCanvas = document.createElement('canvas')
+      offscreenCanvas.width = originalCanvas.width
+      offscreenCanvas.height = originalCanvas.height
+      
+      const ctx = offscreenCanvas.getContext('2d')
+      
+      // 白背景を描画
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height)
+      
+      // 元のグラフを白背景の上に描画
+      ctx.drawImage(originalCanvas, 0, 0)
+      
+      // 白背景付きの画像をダウンロード
+      const url = offscreenCanvas.toDataURL('image/png')
       const link = document.createElement('a')
       link.download = `chart-${chartType}-${Date.now()}.png`
       link.href = url

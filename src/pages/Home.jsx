@@ -15,23 +15,27 @@ import {
 export function Home() {
   const [data, setData] = useState(null)
   const [chartType, setChartType] = useState('bar')
-  const [uploadedFileData, setUploadedFileData] = useState(null)
+  const [savedConfiguration, setSavedConfiguration] = useState(null)
   const [isReconfiguring, setIsReconfiguring] = useState(false)
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [resetKey, setResetKey] = useState(0)
 
-  const handleDataLoaded = (chartData, fileData) => {
+  const handleDataLoaded = (chartData, configuration) => {
+    // 括弧モードをchartDataに追加
+    if (configuration && configuration.parenthesesMode) {
+      chartData.parenthesesMode = configuration.parenthesesMode
+    }
     setData(chartData)
-    // ファイルデータを保存(再設定用)
-    if (fileData) {
-      setUploadedFileData(fileData)
+    // すべての設定内容を保存(再設定用)
+    if (configuration) {
+      setSavedConfiguration(configuration)
     }
     setIsReconfiguring(false)
   }
 
   const handleReset = () => {
     setData(null)
-    setUploadedFileData(null)
+    setSavedConfiguration(null)
     setIsReconfiguring(false)
     setResetKey(prev => prev + 1) // FileUploadコンポーネントを強制的に再マウント
   }
@@ -59,7 +63,7 @@ export function Home() {
             key={resetKey}
             onDataLoaded={handleDataLoaded}
             isReconfiguring={isReconfiguring}
-            savedFileData={uploadedFileData}
+            savedConfiguration={savedConfiguration}
             onReset={handleResetClick}
           />
         ) : (
