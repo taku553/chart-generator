@@ -291,8 +291,12 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
     
     // ヘッダーとデータを結合
     const combinedData = combineHeaderAndDataRanges(rawRows, range, selectedRange.range)
-    setProcessedDataForHeader(combinedData)
-    setOrientationConfirmed(true) // 向き確認はスキップして次へ
+    // 結合したデータを一時保存（転置判断のため）
+    setSelectedRange(prev => ({
+      ...prev,
+      data: combinedData
+    }))
+    // 向き確認画面を表示するため、orientationConfirmedはfalseのまま
   }
 
   // 別領域ヘッダーをスキップ
@@ -755,13 +759,18 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
       )}
 
       {/* データ向き確認 */}
-      {selectedRange && separateHeaderConfirmed && !headerRange && !orientationConfirmed && (
+      {selectedRange && separateHeaderConfirmed && !orientationConfirmed && (
         <div className="space-y-4">
           <div className="flex justify-start">
             <Button 
               variant="outline" 
               className="glass-button"
-              onClick={() => setSeparateHeaderConfirmed(false)}
+              onClick={() => {
+                setSeparateHeaderConfirmed(false)
+                if (headerRange) {
+                  setHeaderRange(null)
+                }
+              }}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               前に戻る
