@@ -1,12 +1,15 @@
+import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Mail, Calendar, Crown, Settings } from 'lucide-react'
+import { ChangePasswordModal } from '@/components/ChangePasswordModal'
 
 export function MyPage() {
   const { user } = useAuth()
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   const getUserInitial = () => {
     if (user?.displayName) {
@@ -155,20 +158,36 @@ export function MyPage() {
                 <Button variant="outline" className="w-full justify-start" disabled>
                   プロフィールを編集
                 </Button>
-                <Button variant="outline" className="w-full justify-start" disabled>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
+                  onClick={() => setShowPasswordModal(true)}
+                  disabled={user?.providerData?.some(p => p.providerId === 'google.com')}
+                >
                   パスワードを変更
                 </Button>
+                {user?.providerData?.some(p => p.providerId === 'google.com') && (
+                  <p className="text-xs text-gray-500 mt-1 ml-1">
+                    Googleログインユーザーはパスワード変更できません
+                  </p>
+                )}
                 <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700" disabled>
                   アカウントを削除
                 </Button>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                ※ これらの機能は近日公開予定です
+                ※ プロフィール編集とアカウント削除機能は近日公開予定です
               </p>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* パスワード変更モーダル */}
+      <ChangePasswordModal 
+        open={showPasswordModal} 
+        onOpenChange={setShowPasswordModal} 
+      />
     </div>
   )
 }

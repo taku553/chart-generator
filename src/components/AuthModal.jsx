@@ -13,6 +13,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Mail, Lock, User, AlertCircle } from 'lucide-react'
+import { validatePassword } from '@/lib/passwordValidator'
 
 export function AuthModal({ open, onOpenChange }) {
   const { signUp, signIn, signInWithGoogle, error } = useAuth()
@@ -59,8 +60,10 @@ export function AuthModal({ open, onOpenChange }) {
       return
     }
 
-    if (signupPassword.length < 6) {
-      setLocalError('パスワードは6文字以上で入力してください')
+    // パスワード強度チェック
+    const { isValid, errors } = validatePassword(signupPassword)
+    if (!isValid) {
+      setLocalError(`パスワードは以下を満たす必要があります: ${errors.join('、')}`)
       setLoading(false)
       return
     }
@@ -105,9 +108,13 @@ export function AuthModal({ open, onOpenChange }) {
       case 'auth/wrong-password':
         return 'パスワードが間違っています'
       case 'auth/weak-password':
-        return 'パスワードは6文字以上で入力してください'
+        return 'パスワードは英数字と記号を含む12文字以上で入力してください'
       case 'auth/popup-closed-by-user':
         return 'ログインがキャンセルされました'
+      case 'auth/requires-recent-login':
+        return '再ログインが必要です'
+      case 'auth/invalid-credential':
+        return '現在のパスワードが正しくありません'
       default:
         return 'エラーが発生しました。もう一度お試しください'
     }
@@ -258,13 +265,16 @@ export function AuthModal({ open, onOpenChange }) {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="6文字以上"
+                    placeholder="英数字と記号を含む12文字以上"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
                     className="pl-10"
                     required
                   />
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  大文字、小文字、数字、記号(!@#$など)を含む12文字以上
+                </p>
               </div>
 
               <div className="space-y-2">

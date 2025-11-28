@@ -622,7 +622,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
                 <input
                   id="file-input"
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   onChange={handleFileInputChange}
                   className="hidden"
                 />

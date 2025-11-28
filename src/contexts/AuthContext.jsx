@@ -6,6 +6,9 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
@@ -102,6 +105,39 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // パスワード変更
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      setError(null)
+      const user = auth.currentUser
+
+      if (!user) {
+        throw new Error('ログインしていません')
+      }
+
+      // メールアドレス・パスワードでログインしているユーザーのみ変更可能
+      const isPasswordProvider = user.providerData.some(
+        (provider) => provider.providerId === 'password'
+      )
+
+      if (!isPasswordProvider) {
+        throw new Error('Googleログインユーザーはパスワード変更できません')
+      }
+
+      // 再認証が必要
+      const credential = EmailAuthProvider.credential(user.email, currentPassword)
+      await reauthenticateWithCredential(user, credential)
+
+      // パスワード更新
+      await updatePassword(user, newPassword)
+
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
   // 認証状態の監視
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -131,6 +167,7 @@ export function AuthProvider({ children }) {
     signIn,
     signInWithGoogle,
     logOut,
+    changePassword,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
