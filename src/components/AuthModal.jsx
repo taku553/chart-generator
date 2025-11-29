@@ -14,11 +14,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Mail, Lock, User, AlertCircle } from 'lucide-react'
 import { validatePassword } from '@/lib/passwordValidator'
+import { PasswordResetModal } from './PasswordResetModal'
 
 export function AuthModal({ open, onOpenChange }) {
   const { signUp, signIn, signInWithGoogle, error } = useAuth()
   const [loading, setLoading] = useState(false)
   const [localError, setLocalError] = useState(null)
+  const [showResetModal, setShowResetModal] = useState(false)
 
   // ログインフォーム
   const [loginEmail, setLoginEmail] = useState('')
@@ -115,6 +117,10 @@ export function AuthModal({ open, onOpenChange }) {
         return '再ログインが必要です'
       case 'auth/invalid-credential':
         return '現在のパスワードが正しくありません'
+      case 'auth/user-disabled':
+        return 'このアカウントは無効化されています'
+      case 'auth/too-many-requests':
+        return 'リクエストが多すぎます。しばらく待ってから再度お試しください'
       default:
         return 'エラーが発生しました。もう一度お試しください'
     }
@@ -182,6 +188,16 @@ export function AuthModal({ open, onOpenChange }) {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'ログイン中...' : 'ログイン'}
               </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(true)}
+                  className="text-sm text-gray-600 hover:text-gray-900 underline"
+                >
+                  パスワードを忘れた場合
+                </button>
+              </div>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -339,6 +355,11 @@ export function AuthModal({ open, onOpenChange }) {
           </TabsContent>
         </Tabs>
       </DialogContent>
+      
+      <PasswordResetModal 
+        open={showResetModal} 
+        onOpenChange={setShowResetModal}
+      />
     </Dialog>
   )
 }

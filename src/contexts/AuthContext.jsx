@@ -9,6 +9,9 @@ import {
   updatePassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  sendPasswordResetEmail,
+  verifyPasswordResetCode,
+  confirmPasswordReset,
 } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
@@ -138,6 +141,45 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // パスワードリセットメールの送信
+  const resetPassword = async (email) => {
+    try {
+      setError(null)
+      await sendPasswordResetEmail(auth, email, {
+        url: window.location.origin + '/reset-password',
+        handleCodeInApp: false,
+      })
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  // パスワードリセットコードの検証
+  const verifyResetCode = async (code) => {
+    try {
+      setError(null)
+      const email = await verifyPasswordResetCode(auth, code)
+      return email
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  // パスワードリセットの実行
+  const confirmPasswordReset = async (code, newPassword) => {
+    try {
+      setError(null)
+      await confirmPasswordReset(auth, code, newPassword)
+      return { success: true }
+    } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
   // 認証状態の監視
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -168,6 +210,9 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     logOut,
     changePassword,
+    resetPassword,
+    verifyResetCode,
+    confirmPasswordReset,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

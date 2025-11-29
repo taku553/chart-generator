@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute.jsx'
 import { Home } from '@/pages/Home.jsx'
 import { UpdatesPage } from '@/pages/UpdatesPage.jsx'
 import { MyPage } from '@/pages/MyPage.jsx'
+import { ResetPassword } from '@/pages/ResetPassword.jsx'
 import './App.css'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/updates" element={<UpdatesPage />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/mypage"
           element={
