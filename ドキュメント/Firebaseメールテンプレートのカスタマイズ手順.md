@@ -40,62 +40,62 @@ Grafico - パスワードリセットのお知らせ
   <meta charset="utf-8">
 </head>
 <body style="font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 0;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5; padding: 40px 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5;">
     <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); max-width: 600px;">
+      <td style="padding: 40px 20px;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" align="center" style="background-color: #ffffff; max-width: 600px; margin: 0 auto;">
           
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); background-color: #2c3e50; color: #ffffff; padding: 30px 20px; text-align: center;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td align="center">
-                    <img src="https://chart-generator-eight.vercel.app/logo.svg" alt="Grafico Logo" style="height: 24px; width: auto; vertical-align: middle; margin-right: 8px;">
-                    <span style="font-size: 24px; font-weight: 300; letter-spacing: 2px; vertical-align: middle; color: #ffffff;">GRAFICO</span>
-                  </td>
-                </tr>
-              </table>
+            <td style="background-color: #2c3e50; color: #ffffff; padding: 30px 20px; text-align: center;">
+              <img src="https://chart-generator-eight.vercel.app/logo.png" alt="Grafico Logo" width="24" height="24" style="display: inline-block; vertical-align: middle; margin-right: 8px;"><!--
+              --><span style="display: inline-block; font-size: 24px; font-weight: 300; letter-spacing: 2px; vertical-align: middle; color: #ffffff;">GRAFICO</span>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
-            <td style="padding: 40px 30px;">
-              <p style="margin: 0 0 20px 0; color: #555; font-size: 16px;">こんにちは、</p>
+            <td style="padding: 40px 30px; background-color: #ffffff;">
+              <p style="margin: 0 0 20px 0; color: #555555; font-size: 16px;">こんにちは、</p>
               
-              <p style="margin: 0 0 20px 0; color: #555; font-size: 16px;">Graficoアカウントのパスワードリセットをリクエストされました。</p>
+              <p style="margin: 0 0 20px 0; color: #555555; font-size: 16px;">Graficoアカウントのパスワードリセットをリクエストされました。</p>
               
-              <p style="margin: 0 0 20px 0; color: #555; font-size: 16px;">以下のボタンをクリックして、新しいパスワードを設定してください。</p>
+              <p style="margin: 0 0 20px 0; color: #555555; font-size: 16px;">以下のボタンをクリックして、新しいパスワードを設定してください。</p>
               
               <!-- Button -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0;">
                 <tr>
-                  <td align="center">
-                    <a href="%LINK%" style="display: inline-block; padding: 14px 40px; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); background-color: #2c3e50; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: 500; letter-spacing: 1px; font-size: 16px;">パスワードを再設定</a>
+                  <td align="center" style="padding: 0;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="background-color: #2c3e50; border-radius: 6px;">
+                          <a href="%LINK%" target="_blank" style="display: inline-block; padding: 14px 40px; color: #ffffff; text-decoration: none; font-weight: 500; letter-spacing: 1px; font-size: 16px; font-family: 'Helvetica Neue', Arial, sans-serif;">パスワードを再設定</a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
               
               <!-- Info Box 1 -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f8f9fa; border-left: 4px solid #2c3e50; margin: 20px 0; border-radius: 4px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0 20px 0;">
                 <tr>
-                  <td style="padding: 15px 20px;">
-                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;"><strong>⏰ このリンクは1時間有効です</strong></p>
-                    <p style="margin: 0; font-size: 14px; color: #666;">セキュリティのため、リンクの有効期限が切れた場合は、もう一度パスワードリセットをリクエストしてください。</p>
+                  <td style="padding: 15px 20px; background-color: #f8f9fa; border-left: 4px solid #2c3e50;">
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: bold;">⏰ このリンクは1時間有効です</p>
+                    <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.5;">セキュリティのため、リンクの有効期限が切れた場合は、もう一度パスワードリセットをリクエストしてください。</p>
                   </td>
                 </tr>
               </table>
               
-              <p style="margin: 30px 0 10px 0; color: #555; font-size: 16px;">ボタンが機能しない場合は、以下のリンクをブラウザにコピー&ペーストしてください：</p>
-              <p style="margin: 0 0 20px 0; color: #2c3e50; word-break: break-all; font-size: 13px;">%LINK%</p>
+              <p style="margin: 30px 0 10px 0; color: #555555; font-size: 16px;">ボタンが機能しない場合は、以下のリンクをブラウザにコピー&amp;ペーストしてください：</p>
+              <p style="margin: 0 0 20px 0; color: #2c3e50; word-break: break-all; font-size: 13px; line-height: 1.6;">%LINK%</p>
               
               <!-- Info Box 2 -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #f8f9fa; border-left: 4px solid #e74c3c; margin: 30px 0 0 0; border-radius: 4px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 30px 0 0 0;">
                 <tr>
-                  <td style="padding: 15px 20px;">
-                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;"><strong>🔒 重要なセキュリティ情報</strong></p>
-                    <p style="margin: 0; font-size: 14px; color: #666;">このメールに心当たりがない場合は、このメールを無視してください。第三者がパスワードリセットを行うことはできません。</p>
+                  <td style="padding: 15px 20px; background-color: #f8f9fa; border-left: 4px solid #e74c3c;">
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #666666; font-weight: bold;">🔒 重要なセキュリティ情報</p>
+                    <p style="margin: 0; font-size: 14px; color: #666666; line-height: 1.5;">このメールに心当たりがない場合は、このメールを無視してください。第三者がパスワードリセットを行うことはできません。</p>
                   </td>
                 </tr>
               </table>
@@ -104,9 +104,9 @@ Grafico - パスワードリセットのお知らせ
           
           <!-- Footer -->
           <tr>
-            <td style="background: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #e0e0e0;">
-              <p style="margin: 5px 0; font-size: 12px; color: #888;">このメールは Grafico から自動送信されています。</p>
-              <p style="margin: 5px 0; font-size: 12px; color: #888;">&copy; 2025 Grafico. All rights reserved.</p>
+            <td style="background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 5px 0; font-size: 12px; color: #888888;">このメールは Grafico から自動送信されています。</p>
+              <p style="margin: 5px 0; font-size: 12px; color: #888888;">&copy; 2025 Grafico. All rights reserved.</p>
             </td>
           </tr>
           
@@ -117,6 +117,26 @@ Grafico - パスワードリセットのお知らせ
 </body>
 </html>
 ```
+
+---
+
+## ⚠️ 重要な注意点
+
+### Firebaseプレビューでの表示について
+
+**Firebaseのテンプレート編集画面のプレビューは簡易表示です**。以下の点に注意してください：
+
+1. **ロゴが表示されない場合がある**
+   - プレビューでは外部画像が読み込まれないことがあります
+   - **実際のメールでは正しく表示されます**
+
+2. **スタイルが簡略化される**
+   - プレビューは完全なレンダリングではありません
+   - 実際のメールクライアントでの表示が重要です
+
+3. **確認方法**
+   - 必ず**実際にテストメールを送信**して確認してください
+   - 自分のメールアドレスにパスワードリセットを送ってテスト
 
 ---
 
@@ -134,23 +154,62 @@ Grafico - パスワードリセットのお知らせ
 - セカンダリ: `#34495e` (グレー)
 - 警告色: `#e74c3c` (レッド)
 
-### 2. **ボタンのカスタマイズ**
-```css
-.button {
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  /* お好みの色に変更可能 */
-}
-```
-
-### 3. **ロゴの追加（オプション）**
-ロゴ画像を使用する場合：
+### 4. **ボタンのカスタマイズ**
+ボタンの色を変更する場合：
 ```html
-<div class="header">
-  <img src="YOUR_LOGO_URL" alt="Grafico" style="max-width: 150px;">
-</div>
+<td align="center" style="background-color: #2c3e50; border-radius: 6px;">
+  <a href="%LINK%" style="...">パスワードを再設定</a>
+</td>
 ```
 
-**注意**: 画像は公開URLである必要があります（Firebase Storage、Cloudinary等）
+### 5. **ロゴ画像について**
+
+**重要**: メールクライアントでは**SVG形式は表示されません**。必ず**PNG/JPG形式**を使用してください。
+
+```html
+<!-- ✅ 正しい -->
+<img src="https://your-domain.com/logo.png" width="24" height="24" alt="Logo">
+
+<!-- ❌ 表示されない -->
+<img src="https://your-domain.com/logo.svg" alt="Logo">
+```
+
+**PNG変換方法**:
+- オンライン: [CloudConvert](https://cloudconvert.com/svg-to-png)
+- Mac: プレビュー.app → 書き出す → PNG
+- コマンド: `convert -background none -resize 48x48 logo.svg logo.png`
+
+---
+
+## 🖼️ ロゴ画像のトラブルシューティング
+
+### ロゴが表示されない原因と解決策
+
+#### 1. **SVG形式を使用している（最も多い原因）**
+- **原因**: Gmail、Outlookなどはセキュリティ上SVGを表示しない
+- **解決**: PNG/JPG形式に変換
+- ❌ `logo.svg` → ✅ `logo.png`
+
+#### 2. **メールクライアントの画像ブロック**
+- **原因**: 初回表示時に外部画像を自動ブロック
+- **解決**: 「画像を表示」ボタンをクリック
+- Gmail、Yahooメールなどで発生
+
+#### 3. **HTTPSではないURL**
+- **原因**: HTTPのURLは表示されない
+- **解決**: HTTPS必須
+- ✅ `https://...` ❌ `http://...`
+
+#### 4. **画像サイズの指定**
+- **推奨**: `width`と`height`を明示
+```html
+<img src="logo.png" width="24" height="24" alt="Logo">
+```
+
+#### 5. **Firebaseの「承認済みドメイン」について**
+- **重要**: 承認済みドメインは**リダイレクト先URL**の設定
+- **画像URLとは無関係** - 画像の表示には影響しない
+- パスワードリセット完了後の遷移先を制限する機能
 
 ---
 
