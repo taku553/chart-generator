@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Mail, Calendar, Crown, Settings } from 'lucide-react'
 import { ChangePasswordModal } from '@/components/ChangePasswordModal'
+import { DeleteAccountModal } from '@/components/DeleteAccountModal'
 
 export function MyPage() {
   const { user } = useAuth()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const getUserInitial = () => {
     if (user?.displayName) {
@@ -171,13 +173,14 @@ export function MyPage() {
                     Googleログインユーザーはパスワード変更できません
                   </p>
                 )}
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700" disabled>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950" 
+                  onClick={() => setShowDeleteModal(true)}
+                >
                   アカウントを削除
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                ※ プロフィール編集とアカウント削除機能は近日公開予定です
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -187,6 +190,12 @@ export function MyPage() {
       <ChangePasswordModal 
         open={showPasswordModal} 
         onOpenChange={setShowPasswordModal} 
+      />
+
+      {/* アカウント削除モーダル */}
+      <DeleteAccountModal 
+        open={showDeleteModal} 
+        onOpenChange={setShowDeleteModal} 
       />
     </div>
   )

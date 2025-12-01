@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,10 +11,14 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { Bar, Line, Pie } from 'react-chartjs-2'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Upload, BarChart3, LineChart, PieChart, Download, Palette, Settings } from 'lucide-react'
+import { Switch } from '@/components/ui/switch.jsx'
+import { Label } from '@/components/ui/label.jsx'
+import { Slider } from '@/components/ui/slider.jsx'
+import { Upload, BarChart3, LineChart, PieChart, Download, Palette, Settings, Eye, EyeOff } from 'lucide-react'
 import { aggregateDataForPieChart } from '@/lib/dataUtils.js'
 import { formatValueWithUnit, generateAxisLabel } from '@/lib/unitUtils.js'
 
@@ -28,17 +32,34 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ChartDataLabels
 )
 
 export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfigure }) {
   const chartRef = useRef(null)
+  const [showDataLabels, setShowDataLabels] = useState(false)
+  const [labelFontSizeAdjustment, setLabelFontSizeAdjustment] = useState(0) // -2〜+2の範囲で調整
 
   const chartTypes = [
     { id: 'bar', icon: BarChart3, label: '棒グラフ', component: Bar },
     { id: 'line', icon: LineChart, label: '折れ線グラフ', component: Line },
     { id: 'pie', icon: PieChart, label: '円グラフ', component: Pie }
   ]
+
+  // データ数に応じた自動フォントサイズ計算(ユーザー調整値を反映)
+  const calculateLabelFontSize = (dataCount) => {
+    let baseSize
+    if (dataCount > 50) baseSize = 7
+    else if (dataCount > 40) baseSize = 8
+    else if (dataCount > 30) baseSize = 9
+    else if (dataCount > 20) baseSize = 10
+    else if (dataCount > 10) baseSize = 11
+    else baseSize = 12
+    
+    // ユーザーの微調整値を加算(最小6px、最大14px)
+    return Math.max(6, Math.min(14, baseSize + labelFontSizeAdjustment))
+  }
 
   // Excel風スチールブルー系カラーパレット
   const colorPalettes = {
@@ -122,11 +143,15 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     const xUnit = unitSettings.x || {}
     const yUnit = unitSettings.y || {}
     const displayTitle = data?.chartTitle || data?.yColumn || '値'
+    const dataCount = data?.chartData?.length || 0
 
     const baseOptions = {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
+        datalabels: {
+          display: false, // デフォルトは非表示（円グラフなど）
+        },
         legend: {
           display: false, // デフォルトの凡例を非表示
           position: 'top',
@@ -256,6 +281,33 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
     // 棒グラフ・折れ線グラフ用のオプション
     return {
       ...baseOptions,
+      plugins: {
+        ...baseOptions.plugins,
+        datalabels: {
+          display: showDataLabels, // 状態に応じて表示/非表示を切り替え
+          align: chartType === 'bar' ? 'end' : 'top',
+          anchor: chartType === 'bar' ? 'end' : 'center',
+          offset: chartType === 'bar' ? 4 : 6,
+          formatter: (value) => {
+            // 単位設定に応じてフォーマット
+            if (yUnit.enabled && yUnit.unit) {
+              return formatValueWithUnit(value, yUnit, true)
+            }
+            return value.toLocaleString()
+          },
+          color: '#000000',
+          font: {
+            size: calculateLabelFontSize(dataCount),
+            weight: '600'
+          },
+          backgroundColor: function(context) {
+            // データ数が多い場合は背景を付けて見やすく
+            return dataCount > 15 ? 'rgba(255, 255, 255, 0.8)' : null
+          },
+          borderRadius: 3,
+          padding: dataCount > 15 ? 2 : 0
+        }
+      },
       scales: {
         x: {
           grid: {
@@ -409,6 +461,69 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           </div>
         </CardContent>
       </Card>
+
+      {/* Data Labels Toggle */}
+      {(chartType === 'bar' || chartType === 'line') && (
+        <Card className="glass-card stagger-animation">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {showDataLabels ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+              データ値の表示
+            </CardTitle>
+            <CardDescription>
+              グラフ上にデータ値を表示します。ダウンロード時にも反映されます。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between space-x-2">
+                <Label htmlFor="data-labels" className="text-sm font-medium flex-1">
+                  グラフにデータ値を表示
+                </Label>
+                <Switch
+                  id="data-labels"
+                  checked={showDataLabels}
+                  onCheckedChange={setShowDataLabels}
+                />
+              </div>
+              
+              {showDataLabels && (
+                <div className="space-y-3 pt-2 border-t border-gray-200">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="font-size-slider" className="text-sm font-medium">
+                        ラベルサイズ
+                      </Label>
+                      <span className="text-xs text-gray-500">
+                        {labelFontSizeAdjustment === 0 
+                          ? `自動: ${calculateLabelFontSize(data.chartData?.length || 0)}px`
+                          : `${calculateLabelFontSize(data.chartData?.length || 0)}px (${labelFontSizeAdjustment > 0 ? '+' : ''}${labelFontSizeAdjustment})`
+                        }
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400">小</span>
+                      <Slider
+                        id="font-size-slider"
+                        min={-2}
+                        max={2}
+                        step={1}
+                        value={[labelFontSizeAdjustment]}
+                        onValueChange={(value) => setLabelFontSizeAdjustment(value[0])}
+                        className="flex-1"
+                      />
+                      <span className="text-xs text-gray-400">大</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    💡 データ数が多い場合、ラベルが重なることがあります
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Chart Display */}
       <Card className="glass-card stagger-animation">

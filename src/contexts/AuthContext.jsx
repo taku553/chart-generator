@@ -9,11 +9,12 @@ import {
   updatePassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   sendPasswordResetEmail,
   verifyPasswordResetCode,
   confirmPasswordReset,
 } from 'firebase/auth'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 
 const AuthContext = createContext({})
@@ -169,12 +170,58 @@ export function AuthProvider({ children }) {
   }
 
   // パスワードリセットの実行
-  const confirmPasswordReset = async (code, newPassword) => {
+  const confirmPasswordResetPassword = async (code, newPassword) => {
     try {
       setError(null)
       await confirmPasswordReset(auth, code, newPassword)
       return { success: true }
     } catch (err) {
+      setError(err.message)
+      throw err
+    }
+  }
+
+  // アカウント削除
+  const deleteAccount = async (password = null) => {
+    try {
+      setError(null)
+      const currentUser = auth.currentUser
+
+      if (!currentUser) {
+        throw new Error('ログインしていません')
+      }
+
+      // 再認証が必要
+      const isGoogleUser = currentUser.providerData.some(
+        (provider) => provider.providerId === 'google.com'
+      )
+
+      if (isGoogleUser) {
+        // Googleユーザーの場合、ポップアップで再認証
+        const provider = new GoogleAuthProvider()
+        await reauthenticateWithPopup(currentUser, provider)
+      } else {
+        // メール・パスワードユーザーの場合
+        if (!password) {
+          throw new Error('パスワードが必要です')
+        }
+        const credential = EmailAuthProvider.credential(
+          currentUser.email,
+          password
+        )
+        await reauthenticateWithCredential(currentUser, credential)
+      }
+
+      // Firestoreからユーザーデータを削除
+      const userRef = doc(db, 'users', currentUser.uid)
+      await deleteDoc(userRef)
+
+      // Firebase Authenticationからアカウントを削除
+      await currentUser.delete()
+
+      return { success: true }
+    } catch (err) {
+      console.error('アカウント削除エラー:', err)
       setError(err.message)
       throw err
     }
@@ -212,7 +259,8 @@ export function AuthProvider({ children }) {
     changePassword,
     resetPassword,
     verifyResetCode,
-    confirmPasswordReset,
+    confirmPasswordReset: confirmPasswordResetPassword,
+    deleteAccount,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
