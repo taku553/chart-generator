@@ -21,6 +21,7 @@ import { Slider } from '@/components/ui/slider.jsx'
 import { Upload, BarChart3, LineChart, PieChart, Download, Palette, Settings, Eye, EyeOff } from 'lucide-react'
 import { aggregateDataForPieChart } from '@/lib/dataUtils.js'
 import { formatValueWithUnit, generateAxisLabel } from '@/lib/unitUtils.js'
+import { ChartInsights } from './ChartInsights.jsx'
 
 // Chart.jsの必要なコンポーネントを登録
 ChartJS.register(
@@ -551,6 +552,12 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Chart Insights */}
+      <ChartInsights 
+        chartData={data} 
+        isVisible={true} 
+      />
 
       {/* Data Summary */}
       <Card className="glass-card stagger-animation">

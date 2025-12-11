@@ -492,6 +492,18 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
       // グラフタイトルを追加
       chartData.chartTitle = title
       
+      // AI解説用の拡張データを追加
+      chartData.sourceData = {
+        rawRows: rawRows, // 元の表データ全体
+        selectedRange: selectedRange, // 選択されたデータ範囲
+        headerRange: headerRange, // ヘッダー範囲
+        labelRange: labelRange, // データラベル範囲
+        originalXColumn: xColumn, // 元のX軸カラム名
+        originalYColumn: yColumn, // 元のY軸カラム名
+        renamedTitle: title, // 変更後のタイトル
+        fileName: file?.name // ファイル名
+      }
+      
       // すべての設定内容を保存して親に渡す
       const configuration = {
         // ファイル情報
