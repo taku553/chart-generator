@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "grafico-4dea6"
+  },
+  "targets": {},
+  "etags": {
+    "grafico-4dea6": {
+      "extensionInstances": {
+        "firestore-stripe-payments": "8f75651f850ec6da242944e61e089e42e3a1a37606e4c62f447cd4b73aebc97d"
+      }
+    }
+  }
+}

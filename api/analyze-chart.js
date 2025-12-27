@@ -49,9 +49,37 @@ function summarizeChartData(chartData, sourceData) {
         title: parsed.chartTitle || parsed.yColumn || '未設定',
         xAxis: parsed.xColumn || 'X軸',
         yAxis: parsed.yColumn || 'Y軸',
-        unit: parsed.unitSettings || null,
+        unitSettings: parsed.unitSettings || null,
       }
     };
+
+    // 単位設定の詳細を明示（特に重要な基準値情報）
+    if (parsed.unitSettings) {
+      const yUnit = parsed.unitSettings.y || {};
+      const xUnit = parsed.unitSettings.x || {};
+      
+      summary.unitInfo = {
+        yAxis: {
+          unitType: yUnit.unitType || 'なし',
+          unit: yUnit.unit || '',
+          scale: yUnit.scale || 1,
+          scaleLabel: yUnit.scaleLabel || '',
+          prefix: yUnit.prefix || '',
+          suffix: yUnit.suffix || '',
+          description: yUnit.scaleLabel 
+            ? `グラフの数値は「${yUnit.scaleLabel}」単位です。実際の値は表示値×${yUnit.scale}です。`
+            : '基準値設定なし'
+        },
+        xAxis: {
+          unitType: xUnit.unitType || 'なし',
+          unit: xUnit.unit || '',
+          scale: xUnit.scale || 1,
+          scaleLabel: xUnit.scaleLabel || '',
+          prefix: xUnit.prefix || '',
+          suffix: xUnit.suffix || ''
+        }
+      };
+    }
 
     // グラフデータの統計情報
     if (parsed.values && Array.isArray(parsed.values) && parsed.values.length > 0) {
@@ -138,6 +166,20 @@ function summarizeChartData(chartData, sourceData) {
   }
 }
 
+// プラン別の回数制限を取得する関数
+function getDailyLimit(plan) {
+  switch(plan) {
+    case 'free':
+      return 5;  // 無料プラン: 5回/日
+    case 'standard':
+      return 50; // Standardプラン: 50回/日
+    case 'pro':
+      return -1; // Proプラン: 無制限
+    default:
+      return 5;
+  }
+}
+
 export default async function handler(req, res) {
   // CORS設定（本番では自ドメインのみに制限）
   const allowedOrigins = [
@@ -197,26 +239,22 @@ export default async function handler(req, res) {
     }
 
     const userData = userDoc.data();
-    if (userData.plan !== 'premium') {
-      return res.status(403).json({ 
-        error: 'この機能はプレミアム会員限定です',
-        code: 'PREMIUM_REQUIRED',
-        currentPlan: userData.plan 
-      });
-    }
+    const userPlan = userData.plan || 'free';
 
-    // 3. レート制限チェック（1日10回まで）
+    // 3. プラン別のレート制限チェック
     const today = new Date().toISOString().split('T')[0];
     const usageKey = `aiUsage_${today}`;
     const currentUsage = userData[usageKey] || 0;
-    const dailyLimit = 10;
+    const dailyLimit = getDailyLimit(userPlan);
 
-    if (currentUsage >= dailyLimit) {
+    // Proプラン（無制限）以外は回数制限をチェック
+    if (dailyLimit !== -1 && currentUsage >= dailyLimit) {
       return res.status(429).json({ 
         error: '本日の利用上限に達しました',
         code: 'RATE_LIMIT_EXCEEDED',
         limit: dailyLimit,
         usage: currentUsage,
+        currentPlan: userPlan,
         resetTime: '明日の0時（日本時間）にリセットされます'
       });
     }
@@ -267,6 +305,15 @@ export default async function handler(req, res) {
             role: 'system',
             content: `あなたは統計データの分析専門家です。提供された**グラフデータと元の表データ全体**を総合的に分析し、わかりやすく説明してください。
 
+【最重要】数値の基準値（スケール）について
+- データには「unitInfo」に基準値設定が含まれています
+- **グラフの数値は基準値単位で表示されています**（例：「千円」「百万円」など）
+- 実際の値は「表示値 × scale」で計算してください
+- 例：グラフに「111,212,889」と表示され、基準値が「千円(scale=1000)」の場合
+  → 実際の金額は 111,212,889 × 1,000 = 111,212,889,000円（約1,112億円）
+- **必ず unitInfo.yAxis.scale の値を確認し、正しい実際の値を計算して言及してください**
+- scaleLabel（「千円」「百万円」など）が設定されている場合は、それを明記してください
+
 【重要】元データの活用について
 - グラフに使われているデータは、元の表データの一部を抽出したものです
 - 元データには、グラフ化されていない他の列や行も含まれています
@@ -275,11 +322,12 @@ export default async function handler(req, res) {
 
 【利用可能な情報】
 1. **グラフデータ**: ユーザーが選択してグラフ化したデータ（統計値、選択範囲）
-2. **元の表データ全体**: 
+2. **単位設定(unitInfo)**: 基準値（スケール）や単位の情報 - **必ず参照**
+3. **元の表データ全体**: 
    - 全ての列のヘッダー名
    - データサンプル（複数行）
    - グラフ化されていない他の列のデータも含む
-3. **名称変更情報**: ユーザーがカスタマイズした表示名
+4. **名称変更情報**: ユーザーがカスタマイズした表示名
 
 【分析の観点】
 1. **グラフデータの特徴**: 傾向、最大値・最小値、平均値、パターン
@@ -291,6 +339,9 @@ export default async function handler(req, res) {
 4. **注目ポイント**: 発見、気づき、提案
 
 【回答の作成方法】
+- **まず unitInfo.yAxis を確認**し、scale値で実際の数値を計算してください
+- 金額などを言及する際は、必ず実際の値（表示値×scale）を使用してください
+- 基準値が設定されている場合は「〜千円」「〜百万円」のように明記してください
 - ユーザーが変更した名称を使用
 - **元データの他の列も参照して分析**（グラフだけでなく表全体を見る）
 - 専門用語を避け、わかりやすく
@@ -308,7 +359,12 @@ ${JSON.stringify(summarizedData, null, 2)}
 【ユーザーの質問】
 ${question.trim()}
 
-**重要**: 上記データには「sourceInfo」に元の表データ全体の情報（全列のヘッダー、データサンプル）が含まれています。グラフに使われたデータだけでなく、元データの他の列も参照して、データの背景や関連性を深く分析してください。`
+**最重要**: 
+1. 必ず「unitInfo.yAxis」を確認し、scale値（基準値）で実際の数値を計算してください
+2. 例：表示値が111,212,889でscaleが1000（千円）の場合、実際は111,212,889,000円です
+3. 金額を言及する際は「111,212,889千円（約1,112億円）」のように正確に表記してください
+4. 上記データには「sourceInfo」に元の表データ全体の情報が含まれています
+5. グラフに使われたデータだけでなく、元データの他の列も参照して分析してください`
           }
         ],
         max_tokens: 1000,
@@ -360,8 +416,9 @@ ${question.trim()}
         completionTokens: completion.usage.completion_tokens,
         totalTokens: completion.usage.total_tokens
       },
-      remainingUsage: dailyLimit - currentUsage - 1,
-      dailyLimit: dailyLimit
+      remainingUsage: dailyLimit === -1 ? -1 : dailyLimit - currentUsage - 1,
+      dailyLimit: dailyLimit,
+      currentPlan: userPlan
     });
 
   } catch (error) {

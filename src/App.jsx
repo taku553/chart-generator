@@ -6,6 +6,7 @@ import { Home } from '@/pages/Home.jsx'
 import { UpdatesPage } from '@/pages/UpdatesPage.jsx'
 import { MyPage } from '@/pages/MyPage.jsx'
 import { ResetPassword } from '@/pages/ResetPassword.jsx'
+import { Pricing } from '@/pages/Pricing.jsx'
 import './App.css'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/updates" element={<UpdatesPage />} />
+        <Route path="/pricing" element={<Pricing />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/mypage"

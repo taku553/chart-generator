@@ -29,12 +29,12 @@ export function NavigationMenu() {
           >
             <span className="text-lg font-medium">更新情報</span>
           </Link>
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 dark:text-gray-600 cursor-not-allowed">
+          <Link
+            to="/pricing"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
             <span className="text-lg font-medium">料金プラン</span>
-            <span className="text-sm bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
-              準備中
-            </span>
-          </div>
+          </Link>
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 dark:text-gray-600 cursor-not-allowed">
             <span className="text-lg font-medium">使い方</span>
             <span className="text-sm bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">

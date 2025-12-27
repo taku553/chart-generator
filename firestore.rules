@@ -1,0 +1,179 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================
+    // ヘルパー関数
+    // ========================================
+    
+    // ユーザーが認証済みか
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // 自分自身のドキュメントか
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Stripe顧客情報を取得
+    function getCustomerData() {
+      return get(/databases/$(database)/documents/customers/$(request.auth.uid)).data;
+    }
+    
+    // プラン情報を取得（stripeRoleが正、なければusers.planを参照）
+    function getUserPlan() {
+      let customerData = getCustomerData();
+      return customerData.get('stripeRole', 'free');
+    }
+    
+    // 有料ユーザーか（StandardまたはPro）
+    function isPremiumUser() {
+      let plan = getUserPlan();
+      return plan in ['standard', 'pro'];
+    }
+    
+    // Proユーザーか
+    function isProUser() {
+      return getUserPlan() == 'pro';
+    }
+    
+    // StandardまたはProユーザーか
+    function isStandardOrProUser() {
+      let plan = getUserPlan();
+      return plan == 'standard' || plan == 'pro';
+    }
+    
+    // 保存可能なチャート数を取得
+    function getMaxSavedCharts() {
+      let plan = getUserPlan();
+      return plan == 'pro' ? 999999 :     // 無制限（実質）
+             plan == 'standard' ? 10 :
+             3;  // free
+    }
+    
+    // AIインサイトの月間上限を取得
+    function getMaxAIInsights() {
+      let plan = getUserPlan();
+      return plan == 'pro' ? 999999 :     // 無制限（実質）
+             plan == 'standard' ? 50 :
+             5;  // free
+    }
+    
+    // ========================================
+    // ユーザーコレクション
+    // ========================================
+    match /users/{userId} {
+      // 読み取り: 自分のドキュメントのみ
+      allow read: if isOwner(userId);
+      
+      // 作成: 新規ユーザー登録時（plan は free 固定）
+      allow create: if isOwner(userId) 
+        && request.resource.data.plan == 'free'
+        && request.resource.data.uid == userId;
+      
+      // 更新: 自分のドキュメントのみ
+      // plan: subscriptionPendingがtrueの場合のみ変更可（決済処理中）
+      // stripeRole/uid: 常に変更不可
+      allow update: if isOwner(userId) 
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['stripeRole', 'uid'])
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['plan'])
+            || request.resource.data.get('subscriptionPending', false) == true);
+      
+      // 削除: 自分のドキュメントのみ
+      allow delete: if isOwner(userId);
+      
+      // ========================================
+      // 保存済みグラフ（サブコレクション）
+      // ========================================
+      match /savedCharts/{chartId} {
+        // 読み取り: 自分の保存グラフのみ
+        allow read: if isOwner(userId);
+        
+        // 作成: 保存上限をチェック
+        allow create: if isOwner(userId)
+          && exists(/databases/$(database)/documents/users/$(userId))
+          && getAfter(/databases/$(database)/documents/users/$(userId)/savedCharts/$(chartId)).data != null;
+        
+        // 更新: 自分の保存グラフのみ
+        allow update: if isOwner(userId);
+        
+        // 削除: 自分の保存グラフのみ
+        allow delete: if isOwner(userId);
+      }
+    }
+    
+    // ========================================
+    // 使用制限管理コレクション
+    // ========================================
+    match /usage/{userId} {
+      // 読み取り: 自分の使用状況のみ
+      allow read: if isOwner(userId);
+      
+      // 作成: 初回AIインサイト使用時
+      allow create: if isOwner(userId)
+        && request.resource.data.aiInsightsCount == 1
+        && request.resource.data.aiInsightsCount <= getMaxAIInsights();
+      
+      // 更新: カウントアップまたはリセット（上限チェック）
+      allow update: if isOwner(userId)
+        && (
+          // 月初リセット
+          (request.resource.data.aiInsightsCount == 0 
+            && request.resource.data.lastReset != resource.data.lastReset)
+          ||
+          // カウントアップ（上限内）
+          (request.resource.data.aiInsightsCount == resource.data.aiInsightsCount + 1
+            && request.resource.data.aiInsightsCount <= getMaxAIInsights())
+        );
+    }
+    
+    // ========================================
+    // Stripe顧客情報（Firebase Extension管理）
+    // ========================================
+    match /customers/{userId} {
+      // 読み取り: 自分の顧客情報のみ
+      allow read: if isOwner(userId);
+      
+      // 作成・更新・削除: Extensionのみ（ユーザーは不可）
+      allow write: if false;
+      
+      // チェックアウトセッション作成
+      match /checkout_sessions/{id} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // サブスクリプション情報
+      match /subscriptions/{id} {
+        allow read: if isOwner(userId);
+        allow write: if false;  // Extensionのみ
+      }
+      
+      // 支払い履歴
+      match /payments/{id} {
+        allow read: if isOwner(userId);
+        allow write: if false;  // Extensionのみ
+      }
+    }
+    
+    // ========================================
+    // Stripe商品情報（全ユーザー読み取り可能）
+    // ========================================
+    match /products/{id} {
+      allow read: if true;
+      allow write: if false;
+      
+      match /prices/{id} {
+        allow read: if true;
+        allow write: if false;
+      }
+      
+      match /tax_rates/{id} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+  }
+}

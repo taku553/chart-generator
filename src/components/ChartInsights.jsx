@@ -15,11 +15,14 @@ export function ChartInsights({ chartData, isVisible = true }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [remainingUsage, setRemainingUsage] = useState(null)
-  const [dailyLimit, setDailyLimit] = useState(10)
+  const [dailyLimit, setDailyLimit] = useState(null)
   const [isComposing, setIsComposing] = useState(false)
+  const [currentPlan, setCurrentPlan] = useState(null)
 
-  // 無料ユーザーの場合
-  const isFreeUser = !user || user.plan === 'free'
+  // プラン情報の取得
+  const userPlan = user?.plan || 'free'
+  const isFreeUser = userPlan === 'free'
+  const isUnlimited = dailyLimit === -1
 
   // AI解説リクエスト
   const handleAnalyze = async () => {
@@ -66,16 +69,30 @@ export function ChartInsights({ chartData, isVisible = true }) {
         body: JSON.stringify(requestData),
       })
 
-      const data = await response.json()
+      // レスポンスが空の場合のハンドリング
+      let data
+      try {
+        const responseText = await response.text()
+        if (!responseText) {
+          throw new Error('サーバーからレスポンスがありませんでした')
+        }
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.error('JSONパースエラー:', parseError)
+        setError(
+          `APIサーバーエラー（${response.status}）:\n` +
+          'ローカル開発環境では、別ターミナルで "npx vercel dev --listen 3000" を実行してください。'
+        )
+        return
+      }
 
       if (!response.ok) {
         // エラーハンドリング
-        if (data.code === 'PREMIUM_REQUIRED') {
-          setError('この機能はプレミアム会員限定です。アップグレードしてご利用ください。')
-        } else if (data.code === 'RATE_LIMIT_EXCEEDED') {
+        if (data.code === 'RATE_LIMIT_EXCEEDED') {
           setError(data.error + '\n' + (data.resetTime || ''))
           setRemainingUsage(0)
-          setDailyLimit(data.limit || 10)
+          setDailyLimit(data.limit || 5)
+          setCurrentPlan(data.currentPlan)
         } else if (data.code === 'AUTH_INVALID') {
           setError('認証に失敗しました。再度ログインしてください。')
         } else {
@@ -88,6 +105,7 @@ export function ChartInsights({ chartData, isVisible = true }) {
       setAnswer(data.answer)
       setRemainingUsage(data.remainingUsage)
       setDailyLimit(data.dailyLimit)
+      setCurrentPlan(data.currentPlan)
     } catch (err) {
       console.error('AI解説エラー:', err)
       setError('通信エラーが発生しました。ネットワーク接続を確認してください。')
@@ -128,134 +146,154 @@ export function ChartInsights({ chartData, isVisible = true }) {
         <div className="flex items-center gap-2">
           <Sparkles className="size-5 text-purple-500" />
           <CardTitle>AI解説機能</CardTitle>
-          {!isFreeUser && (
+          {userPlan === 'pro' && (
+            <span className="ml-auto flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+              <Crown className="size-3" />
+              Pro - 無制限
+            </span>
+          )}
+          {userPlan === 'standard' && (
             <span className="ml-auto flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
               <Crown className="size-3" />
-              Premium
+              Standard
             </span>
           )}
         </div>
         <CardDescription>
-          {isFreeUser
-            ? 'グラフデータの傾向や特徴をAIが分析します（プレミアム会員限定）'
-            : 'グラフデータの傾向や特徴についてAIに質問できます'}
+          グラフデータの傾向や特徴についてAIに質問できます
+          {isFreeUser && '（無料プラン: 5回/日）'}
+          {userPlan === 'standard' && '（50回/日）'}
+          {userPlan === 'pro' && '（無制限）'}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* 無料ユーザー向けアップグレード誘導 */}
-        {isFreeUser ? (
+        {/* 無料ユーザー向けアップグレード案内 */}
+        {isFreeUser && (
           <Alert className="border-amber-200 bg-amber-50">
             <Crown className="text-amber-600" />
-            <AlertTitle className="text-amber-900">プレミアム会員限定機能</AlertTitle>
+            <AlertTitle className="text-amber-900">アップグレードで回数制限を大幅拡張</AlertTitle>
             <AlertDescription className="text-amber-800">
-              AI解説機能を利用するには、プレミアムプランへのアップグレードが必要です。
+              現在の利用制限: 5回/日
+              <br />
+              Standardプランなら50回/日、Proプランなら無制限で利用できます。
               <br />
               <Button
                 variant="default"
                 size="sm"
                 className="mt-3 bg-amber-600 hover:bg-amber-700"
                 onClick={() => {
-                  // TODO: アップグレードページへのナビゲーションを実装
-                  alert('アップグレードページは準備中です')
+                  window.location.href = '/pricing'
                 }}
               >
                 <Crown className="mr-2 size-4" />
-                プレミアムにアップグレード
+                プランを見る
               </Button>
             </AlertDescription>
           </Alert>
-        ) : (
-          <>
-            {/* 残り利用回数表示 */}
-            {remainingUsage !== null && (
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center gap-2 text-sm text-blue-900">
-                  <TrendingUp className="size-4" />
-                  <span>本日の残り利用回数</span>
-                </div>
-                <span className="text-lg font-bold text-blue-700">
-                  {remainingUsage} / {dailyLimit}
-                </span>
-              </div>
-            )}
-
-            {/* 質問入力フォーム */}
-            <div className="space-y-2">
-              <Label htmlFor="question">グラフについて質問してください</Label>
-              <Textarea
-                id="question"
-                placeholder="例：このデータの傾向を教えてください。最大値と最小値の差が大きい理由は何ですか？"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onCompositionStart={handleCompositionStart}
-                onCompositionEnd={handleCompositionEnd}
-                disabled={loading}
-                rows={3}
-                maxLength={500}
-                className="resize-none"
-              />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Enterキーで送信、Shift+Enterで改行</span>
-                <span className={question.length > 450 ? 'text-destructive' : ''}>
-                  {question.length} / 500
-                </span>
-              </div>
-            </div>
-
-            {/* 送信ボタン */}
-            <Button
-              onClick={handleAnalyze}
-              disabled={loading || !question.trim() || question.length > 500}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  分析中...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 size-4" />
-                  AI解説を取得
-                </>
-              )}
-            </Button>
-
-            {/* エラー表示 */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle />
-                <AlertTitle>エラー</AlertTitle>
-                <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* AI解説結果表示 */}
-            {answer && (
-              <div className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="size-4 text-purple-600" />
-                  <span className="text-sm font-semibold text-purple-900">AI解説結果</span>
-                </div>
-                <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                  {answer}
-                </div>
-              </div>
-            )}
-
-            {/* 注意事項 */}
-            <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-              <p className="font-medium mb-1">💡 ご利用上の注意</p>
-              <ul className="space-y-0.5 list-disc list-inside">
-                <li>1日あたり{dailyLimit}回まで利用可能です</li>
-                <li>利用回数は毎日0時（日本時間）にリセットされます</li>
-                <li>AIの回答は参考情報であり、完全な正確性を保証するものではありません</li>
-              </ul>
-            </div>
-          </>
         )}
+
+        {/* 残り利用回数表示 */}
+        {remainingUsage !== null && !isUnlimited && (
+          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-2 text-sm text-blue-900">
+              <TrendingUp className="size-4" />
+              <span>本日の残り利用回数</span>
+            </div>
+            <span className="text-lg font-bold text-blue-700">
+              {remainingUsage} / {dailyLimit}
+            </span>
+          </div>
+        )}
+
+        {/* Pro会員向け無制限表示 */}
+        {isUnlimited && (
+          <div className="flex items-center justify-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="flex items-center gap-2 text-sm text-purple-900">
+              <Crown className="size-4" />
+              <span className="font-bold">無制限でご利用いただけます</span>
+            </div>
+          </div>
+        )}
+
+        {/* 質問入力フォーム */}
+        <div className="space-y-2">
+          <Label htmlFor="question">グラフについて質問してください</Label>
+          <Textarea
+            id="question"
+            placeholder="例：このデータの傾向を教えてください。最大値と最小値の差が大きい理由は何ですか？"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            disabled={loading}
+            rows={3}
+            maxLength={500}
+            className="resize-none"
+          />
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Enterキーで送信、Shift+Enterで改行</span>
+            <span className={question.length > 450 ? 'text-destructive' : ''}>
+              {question.length} / 500
+            </span>
+          </div>
+        </div>
+
+        {/* 送信ボタン */}
+        <Button
+          onClick={handleAnalyze}
+          disabled={loading || !question.trim() || question.length > 500}
+          className="w-full"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              分析中...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 size-4" />
+              AI解説を取得
+            </>
+          )}
+        </Button>
+
+        {/* エラー表示 */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertTitle>エラー</AlertTitle>
+            <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* AI解説結果表示 */}
+        {answer && (
+          <div className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="size-4 text-purple-600" />
+              <span className="text-sm font-semibold text-purple-900">AI解説結果</span>
+            </div>
+            <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+              {answer}
+            </div>
+          </div>
+        )}
+
+        {/* 注意事項 */}
+        <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+          <p className="font-medium mb-1">💡 ご利用上の注意</p>
+          <ul className="space-y-0.5 list-disc list-inside">
+            {isUnlimited ? (
+              <li>Pro会員は無制限でご利用いただけます</li>
+            ) : (
+              <li>1日あたり{dailyLimit || '制限'}回まで利用可能です</li>
+            )}
+            <li>利用回数は毎日0時（日本時間）にリセットされます</li>
+            <li>AIの回答は参考情報であり、完全な正確性を保証するものではありません</li>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   )

@@ -1,17 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Mail, Calendar, Crown, Settings } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Mail, Calendar, Crown, Settings, CheckCircle2 } from 'lucide-react'
 import { ChangePasswordModal } from '@/components/ChangePasswordModal'
 import { DeleteAccountModal } from '@/components/DeleteAccountModal'
 
 export function MyPage() {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+
+  // 決済完了メッセージ表示
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id')
+    if (sessionId) {
+      setShowSuccessMessage(true)
+      // URLからsession_idパラメータを削除（クリーンなURL）
+      searchParams.delete('session_id')
+      setSearchParams(searchParams, { replace: true })
+      
+      // 5秒後にメッセージを非表示
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false)
+      }, 10000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, setSearchParams])
 
   const getUserInitial = () => {
     if (user?.displayName) {
@@ -46,6 +68,19 @@ export function MyPage() {
               アカウント情報とプラン詳細
             </p>
           </div>
+
+          {/* 決済完了メッセージ */}
+          {showSuccessMessage && (
+            <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <AlertTitle className="text-green-900 dark:text-green-100 font-semibold">
+                🎉 決済が完了しました！
+              </AlertTitle>
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                有料プランへのアップグレードが完了しました。すべての機能がご利用いただけます。
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* プロフィールカード */}
           <Card>
@@ -115,8 +150,10 @@ export function MyPage() {
                       プラン
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant={user?.plan === 'premium' ? 'default' : 'secondary'} className="text-base">
-                        {user?.plan === 'free' ? '無料プラン' : '有料プラン'}
+                      <Badge variant={user?.plan !== 'free' ? 'default' : 'secondary'} className="text-base">
+                        {user?.plan === 'free' ? '無料プラン' : 
+                         user?.plan === 'standard' ? 'Standard プラン' :
+                         user?.plan === 'pro' ? 'Pro プラン' : '有料プラン'}
                       </Badge>
                     </div>
                   </div>
