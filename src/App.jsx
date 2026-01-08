@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Link } from 'react-router-dom'
 import { Header } from '@/components/Header.jsx'
 import { SocialLinks } from '@/components/SocialLinks.jsx'
 import { ProtectedRoute } from '@/components/ProtectedRoute.jsx'
