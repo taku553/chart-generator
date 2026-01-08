@@ -37,12 +37,12 @@ function App() {
           <SocialLinks />
           <div className="text-center space-y-2">
             <div className="flex justify-center gap-4 text-sm">
-              <a 
-                href="/legal-notice" 
+              <Link 
+                to="/legal-notice" 
                 className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
               >
                 特定商取引法に基づく表記
-              </a>
+              </Link>
             </div>
             <p className="text-gray-600 dark:text-gray-300">
               &copy; 2025 Grafico. All rights reserved.
