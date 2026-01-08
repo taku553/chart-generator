@@ -7,6 +7,7 @@ import { UpdatesPage } from '@/pages/UpdatesPage.jsx'
 import { MyPage } from '@/pages/MyPage.jsx'
 import { ResetPassword } from '@/pages/ResetPassword.jsx'
 import { Pricing } from '@/pages/Pricing.jsx'
+import { LegalNotice } from '@/pages/LegalNotice.jsx'
 import './App.css'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/updates" element={<UpdatesPage />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/legal-notice" element={<LegalNotice />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/mypage"
@@ -33,9 +35,19 @@ function App() {
       <footer className="border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm mt-16">
         <div className="container mx-auto px-4 py-6">
           <SocialLinks />
-          <p className="text-center text-gray-600 dark:text-gray-300">
-            &copy; 2025 Grafico. All rights reserved.
-          </p>
+          <div className="text-center space-y-2">
+            <div className="flex justify-center gap-4 text-sm">
+              <a 
+                href="/legal-notice" 
+                className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+              >
+                特定商取引法に基づく表記
+              </a>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300">
+              &copy; 2025 Grafico. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

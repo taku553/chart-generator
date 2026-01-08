@@ -2,10 +2,19 @@
 // 一時的な開発用 - 本番ではWebhookを使用すること
 
 import admin from 'firebase-admin';
+import dotenv from 'dotenv';
+
+// .env.local から環境変数を読み込む
+dotenv.config({ path: '.env.local' });
 
 // Firebase Admin SDK初期化
 admin.initializeApp({
-  projectId: 'grafico-4dea6',
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  }),
+  projectId: process.env.FIREBASE_PROJECT_ID,
 });
 
 const db = admin.firestore();
@@ -15,7 +24,7 @@ async function syncProducts() {
 
   const products = [
     {
-      id: 'prod_TceJ0POTNmJDOX', // Standard Plan
+      id: 'prod_TjuJKUTwDIbXcn', // Standard Plan
       name: 'Standard Plan',
       description: 'グラフ化済みファイルを10個まで保存可能、AIインサイト50回/月',
       active: true,
@@ -25,7 +34,7 @@ async function syncProducts() {
       },
       prices: [
         {
-          id: 'price_1SfP14CY4jOV83AypPkVT1Rg', // Standard Monthly
+          id: 'price_1SmQV8EAvqOB6oQP46mevNgM', // Standard Monthly
           active: true,
           currency: 'jpy',
           unit_amount: 980, // ¥980（JPYは整数値）
@@ -37,7 +46,7 @@ async function syncProducts() {
           },
         },
         {
-          id: 'price_1SfPGBCY4jOV83AyafyHSftj', // Standard Yearly
+          id: 'price_1SmQV7EAvqOB6oQPx4obgeQ8', // Standard Yearly
           active: true,
           currency: 'jpy',
           unit_amount: 9800, // ¥9,800（JPYは整数値）
@@ -51,7 +60,7 @@ async function syncProducts() {
       ],
     },
     {
-      id: 'prod_TceUV379sJlB5e', // Pro Plan
+      id: 'prod_TjuJyxyxfbuzPX', // Pro Plan
       name: 'Pro Plan',
       description: '無制限のファイル保存とAIインサイト、優先サポート',
       active: true,
@@ -61,7 +70,7 @@ async function syncProducts() {
       },
       prices: [
         {
-          id: 'price_1SfPBXCY4jOV83AyuleCcsKe', // Pro Monthly
+          id: 'price_1SmQV6EAvqOB6oQP7gePYfMM', // Pro Monthly
           active: true,
           currency: 'jpy',
           unit_amount: 1980, // ¥1,980（JPYは整数値）
@@ -73,7 +82,7 @@ async function syncProducts() {
           },
         },
         {
-          id: 'price_1SfPHJCY4jOV83AyK9JTwjaR', // Pro Yearly
+          id: 'price_1SmQV6EAvqOB6oQPvTV6xrSK', // Pro Yearly
           active: true,
           currency: 'jpy',
           unit_amount: 19800, // ¥19,800（JPYは整数値）
