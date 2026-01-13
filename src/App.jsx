@@ -8,6 +8,8 @@ import { MyPage } from '@/pages/MyPage.jsx'
 import { ResetPassword } from '@/pages/ResetPassword.jsx'
 import { Pricing } from '@/pages/Pricing.jsx'
 import { LegalNotice } from '@/pages/LegalNotice.jsx'
+import { TermsPage } from '@/pages/TermsPage.jsx'
+import { PrivacyPage } from '@/pages/PrivacyPage.jsx'
 import './App.css'
 
 function App() {
@@ -20,6 +22,8 @@ function App() {
         <Route path="/updates" element={<UpdatesPage />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/legal-notice" element={<LegalNotice />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/mypage"
@@ -37,6 +41,18 @@ function App() {
           <SocialLinks />
           <div className="text-center space-y-2">
             <div className="flex justify-center gap-4 text-sm">
+              <Link 
+                to="/terms" 
+                className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+              >
+                利用規約
+              </Link>
+              <Link 
+                to="/privacy" 
+                className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
+              >
+                プライバシーポリシー
+              </Link>
               <Link 
                 to="/legal-notice" 
                 className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"

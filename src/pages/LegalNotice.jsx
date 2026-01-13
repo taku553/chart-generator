@@ -99,7 +99,7 @@ export function LegalNotice() {
           </h2>
           <div className="space-y-2 text-gray-700 dark:text-gray-300">
             <p>サブスクリプション契約成立時に初回決済が行われます。</p>
-            <p>以降、毎月同日に自動的に決済されます。</p>
+            <p>以降、月額プランは毎月1日、年額プランは毎年同日に自動的に決済されます。</p>
           </div>
         </section>
 
@@ -182,7 +182,7 @@ export function LegalNotice() {
 
       {/* 最終更新日 */}
       <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-        最終更新日: 2026年1月8日
+        最終更新日: 2026年1月13日
       </p>
     </div>
   )

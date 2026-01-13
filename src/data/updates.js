@@ -1,5 +1,11 @@
 export const updates = [
   {
+    id: 8,
+    date: '2026.01.13',
+    title: '利用規約とプライバシーポリシー、特商法ページ、Google Analyticsを導入',
+    description: 'Stripe本番環境への移行準備として、利用規約とプライバシーポリシーを作成。有料プランを正式に提供できる環境を整えました。特定商取引法に基づく表記も最新情報に更新。アクセス解析のためGoogle Analyticsも導入。そして、広告ブロッカーによるブロックを回避するため、ファイル名をPrivacyPage.jsxとTermsPage.jsxに変更しています。',
+  },
+  {
     id: 7,
     date: '2025.12.11',
     title: 'AIインサイト機能を実装',
