@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +19,7 @@ import { PasswordResetModal } from './PasswordResetModal'
 
 export function AuthModal({ open, onOpenChange }) {
   const { signUp, signIn, signInWithGoogle, error } = useAuth()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [localError, setLocalError] = useState(null)
   const [showResetModal, setShowResetModal] = useState(false)
@@ -57,7 +59,7 @@ export function AuthModal({ open, onOpenChange }) {
 
     // パスワード確認
     if (signupPassword !== confirmPassword) {
-      setLocalError('パスワードが一致しません')
+      setLocalError(t('auth.error.passwordMismatch'))
       setLoading(false)
       return
     }
@@ -65,7 +67,7 @@ export function AuthModal({ open, onOpenChange }) {
     // パスワード強度チェック
     const { isValid, errors } = validatePassword(signupPassword)
     if (!isValid) {
-      setLocalError(`パスワードは以下を満たす必要があります: ${errors.join('、')}`)
+      setLocalError(t('auth.error.passwordInvalid').replace('{errors}', errors.join(', ')))
       setLoading(false)
       return
     }
@@ -102,27 +104,27 @@ export function AuthModal({ open, onOpenChange }) {
   const getErrorMessage = (code) => {
     switch (code) {
       case 'auth/email-already-in-use':
-        return 'このメールアドレスは既に登録されています'
+        return t('auth.error.emailInUse')
       case 'auth/invalid-email':
-        return 'メールアドレスの形式が正しくありません'
+        return t('auth.error.invalidEmail')
       case 'auth/user-not-found':
-        return 'ユーザーが見つかりません'
+        return t('auth.error.userNotFound')
       case 'auth/wrong-password':
-        return 'パスワードが間違っています'
+        return t('auth.error.wrongPassword')
       case 'auth/weak-password':
-        return 'パスワードは英数字と記号を含む12文字以上で入力してください'
+        return t('auth.error.weakPassword')
       case 'auth/popup-closed-by-user':
-        return 'ログインがキャンセルされました'
+        return t('auth.error.popupClosed')
       case 'auth/requires-recent-login':
-        return '再ログインが必要です'
+        return t('auth.error.recentLoginRequired')
       case 'auth/invalid-credential':
-        return '現在のパスワードが正しくありません'
+        return t('auth.error.invalidCredential')
       case 'auth/user-disabled':
-        return 'このアカウントは無効化されています'
+        return t('auth.error.userDisabled')
       case 'auth/too-many-requests':
-        return 'リクエストが多すぎます。しばらく待ってから再度お試しください'
+        return t('auth.error.tooManyRequests')
       default:
-        return 'エラーが発生しました。もう一度お試しください'
+        return t('auth.error.default')
     }
   }
 
@@ -130,16 +132,16 @@ export function AuthModal({ open, onOpenChange }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>アカウント</DialogTitle>
+          <DialogTitle>{t('auth.title')}</DialogTitle>
           <DialogDescription>
-            ログインまたは新規登録してください
+            {t('auth.description')}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="login" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">ログイン</TabsTrigger>
-            <TabsTrigger value="signup">新規登録</TabsTrigger>
+            <TabsTrigger value="login">{t('auth.loginTab')}</TabsTrigger>
+            <TabsTrigger value="signup">{t('auth.signupTab')}</TabsTrigger>
           </TabsList>
 
           {/* エラー表示 */}
@@ -154,7 +156,7 @@ export function AuthModal({ open, onOpenChange }) {
           <TabsContent value="login">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login-email">メールアドレス</Label>
+                <Label htmlFor="login-email">{t('auth.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -170,7 +172,7 @@ export function AuthModal({ open, onOpenChange }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="login-password">パスワード</Label>
+                <Label htmlFor="login-password">{t('auth.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -186,7 +188,7 @@ export function AuthModal({ open, onOpenChange }) {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'ログイン中...' : 'ログイン'}
+                {loading ? t('auth.loggingIn') : t('auth.loginButton')}
               </Button>
 
               <div className="text-center">
@@ -195,7 +197,7 @@ export function AuthModal({ open, onOpenChange }) {
                   onClick={() => setShowResetModal(true)}
                   className="text-sm text-gray-600 hover:text-gray-900 underline"
                 >
-                  パスワードを忘れた場合
+                  {t('auth.forgotPassword')}
                 </button>
               </div>
 
@@ -205,7 +207,7 @@ export function AuthModal({ open, onOpenChange }) {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
-                    または
+                    {t('auth.or')}
                   </span>
                 </div>
               </div>
@@ -235,7 +237,7 @@ export function AuthModal({ open, onOpenChange }) {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Googleでログイン
+                {t('auth.googleLogin')}
               </Button>
             </form>
           </TabsContent>
@@ -244,13 +246,13 @@ export function AuthModal({ open, onOpenChange }) {
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-name">名前(任意)</Label>
+                <Label htmlFor="signup-name">{t('auth.name')}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="山田太郎"
+                    placeholder={t('auth.namePlaceholder')}
                     value={signupName}
                     onChange={(e) => setSignupName(e.target.value)}
                     className="pl-10"
@@ -259,7 +261,7 @@ export function AuthModal({ open, onOpenChange }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="signup-email">メールアドレス</Label>
+                <Label htmlFor="signup-email">{t('auth.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -275,13 +277,13 @@ export function AuthModal({ open, onOpenChange }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="signup-password">パスワード</Label>
+                <Label htmlFor="signup-password">{t('auth.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="英数字と記号を含む12文字以上"
+                    placeholder={t('auth.passwordPlaceholder')}
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
                     className="pl-10"
@@ -289,18 +291,18 @@ export function AuthModal({ open, onOpenChange }) {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  大文字、小文字、数字、記号(!@#$など)を含む12文字以上
+                  {t('auth.passwordRequirements')}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirm-password">パスワード(確認)</Label>
+                <Label htmlFor="confirm-password">{t('auth.passwordConfirm')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="confirm-password"
                     type="password"
-                    placeholder="パスワードを再入力"
+                    placeholder={t('auth.passwordConfirmPlaceholder')}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pl-10"
@@ -310,7 +312,7 @@ export function AuthModal({ open, onOpenChange }) {
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? '登録中...' : '新規登録'}
+                {loading ? t('auth.registering') : t('auth.signupButton')}
               </Button>
 
               <div className="relative">
@@ -319,7 +321,7 @@ export function AuthModal({ open, onOpenChange }) {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-2 text-muted-foreground">
-                    または
+                    {t('auth.or')}
                   </span>
                 </div>
               </div>
@@ -349,7 +351,7 @@ export function AuthModal({ open, onOpenChange }) {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Googleで登録
+                {t('auth.googleSignup')}
               </Button>
             </form>
           </TabsContent>

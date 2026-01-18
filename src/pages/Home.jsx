@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FileUpload } from '@/components/FileUpload.jsx'
 import { ChartDisplay } from '@/components/ChartDisplay.jsx'
+import { useLanguage } from '@/contexts/LanguageContext'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog.jsx'
 
 export function Home() {
+  const { t } = useLanguage()
   const [data, setData] = useState(null)
   const [chartType, setChartType] = useState('bar')
   const [savedConfiguration, setSavedConfiguration] = useState(null)
@@ -81,15 +83,15 @@ export function Home() {
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>設定を破棄しますか？</AlertDialogTitle>
+            <AlertDialogTitle>{t('home.resetDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              現在の設定をすべて破棄して最初に戻ります。この操作は取り消せません。
+              {t('home.resetDialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>キャンセル</AlertDialogCancel>
+            <AlertDialogCancel>{t('home.resetDialog.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleResetConfirm}>
-              OK
+              {t('home.resetDialog.ok')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

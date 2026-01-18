@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext.jsx'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { db } from '@/lib/firebase'
 import { collection, addDoc, onSnapshot, doc, setDoc } from 'firebase/firestore'
 import { Button } from '@/components/ui/button.jsx'
@@ -10,6 +11,7 @@ import { Check, Sparkles, Zap, Crown, Loader2 } from 'lucide-react'
 
 export function Pricing() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [billingPeriod, setBillingPeriod] = useState('monthly') // 'monthly' or 'yearly'
   const [loading, setLoading] = useState(false)
@@ -18,75 +20,75 @@ export function Pricing() {
   const plans = [
     {
       id: 'free',
-      name: 'Free',
+      name: t('pricing.planFree'),
       price: 0,
       yearlyPrice: 0,
       priceId: {
         monthly: null,
         yearly: null,
       },
-      description: 'グラフ作成を始める',
+      description: t('pricing.descFree'),
       icon: Sparkles,
       iconColor: 'text-gray-500',
       features: [
-        { text: 'ファイル保存：3個まで', included: true },
-        { text: 'AIインサイト：月5回', included: true },
-        { text: '基本的なグラフ作成機能', included: true },
-        { text: 'コミュニティサポート', included: true },
-        { text: '優先サポート', included: false },
-        { text: 'API アクセス', included: false },
+        { text: t('pricing.feature.filesFree'), included: true },
+        { text: t('pricing.feature.aiFree'), included: true },
+        { text: t('pricing.feature.basicCharts'), included: true },
+        { text: t('pricing.feature.communitySupport'), included: true },
+        { text: t('pricing.feature.prioritySupport'), included: false },
+        { text: t('pricing.feature.apiAccess'), included: false },
       ],
-      cta: user ? '現在のプラン' : '無料で始める',
+      cta: user ? t('pricing.currentPlan') : t('pricing.getStartedFree'),
       popular: false,
       buttonVariant: 'outline',
     },
     {
       id: 'standard',
-      name: 'Standard',
+      name: t('pricing.planStandard'),
       price: 980,
       yearlyPrice: 9800, // 2ヶ月分お得
       priceId: {
         monthly: 'price_1SfP14CY4jOV83AypPkVT1Rg',
         yearly: 'price_1SfPGBCY4jOV83AyafyHSftj',
       },
-      description: '本格的にグラフ分析',
+      description: t('pricing.descStandard'),
       icon: Zap,
       iconColor: 'text-blue-500',
-      badge: '人気No.1',
+      badge: t('pricing.badgePopular'),
       features: [
-        { text: 'ファイル保存：10個まで', included: true },
-        { text: 'AIインサイト：月50回', included: true },
-        { text: '全グラフ作成機能', included: true },
-        { text: '優先サポート', included: true },
-        { text: 'データエクスポート機能', included: true },
-        { text: 'API アクセス', included: false },
+        { text: t('pricing.feature.filesStandard'), included: true },
+        { text: t('pricing.feature.aiStandard'), included: true },
+        { text: t('pricing.feature.allCharts'), included: true },
+        { text: t('pricing.feature.prioritySupport'), included: true },
+        { text: t('pricing.feature.dataExport'), included: true },
+        { text: t('pricing.feature.apiAccess'), included: false },
       ],
-      cta: 'アップグレード',
+      cta: t('pricing.upgrade'),
       popular: true,
       buttonVariant: 'default',
-      savingsText: '75%のユーザーが選択',
+      savingsText: t('pricing.popularChoice').replace('{percent}', '75'),
     },
     {
       id: 'pro',
-      name: 'Pro',
+      name: t('pricing.planPro'),
       price: 1980,
       yearlyPrice: 19800,
       priceId: {
         monthly: 'price_1SfPBXCY4jOV83AyuleCcsKe',
         yearly: 'price_1SfPHJCY4jOV83AyK9JTwjaR',
       },
-      description: 'プロフェッショナル向け',
+      description: t('pricing.descPro'),
       icon: Crown,
       iconColor: 'text-amber-500',
       features: [
-        { text: 'ファイル保存：無制限', included: true },
-        { text: 'AIインサイト：無制限', included: true },
-        { text: '全グラフ作成機能', included: true },
-        { text: '優先サポート', included: true },
-        { text: 'データエクスポート機能', included: true },
-        { text: 'API アクセス（準備中）', included: true },
+        { text: t('pricing.feature.filesPro'), included: true },
+        { text: t('pricing.feature.aiPro'), included: true },
+        { text: t('pricing.feature.allCharts'), included: true },
+        { text: t('pricing.feature.prioritySupport'), included: true },
+        { text: t('pricing.feature.dataExport'), included: true },
+        { text: t('pricing.feature.apiAccessSoon'), included: true },
       ],
-      cta: 'アップグレード',
+      cta: t('pricing.upgrade'),
       popular: false,
       buttonVariant: 'outline',
     },
@@ -103,7 +105,7 @@ export function Pricing() {
 
     // 未ログインユーザー
     if (!user) {
-      alert('まずはアカウント登録が必要です')
+      alert(t('pricing.error.loginRequired'))
       navigate('/')
       return
     }
@@ -116,7 +118,7 @@ export function Pricing() {
       const priceId = plan.priceId[billingPeriod]
 
       if (!priceId) {
-        throw new Error('価格IDが見つかりません')
+        throw new Error(t('pricing.error.priceIdNotFound'))
       }
 
       console.log('🔵 決済開始:', {
@@ -160,7 +162,7 @@ export function Pricing() {
           unsubscribe()
           setLoading(false)
           setLoadingPlanId(null)
-          alert(`エラーが発生しました: ${error.message}`)
+          alert(t('pricing.error.checkoutFailed').replace('{message}', error.message))
         }
 
         if (url) {
@@ -187,7 +189,7 @@ export function Pricing() {
       })
     } catch (error) {
       console.error('決済エラー:', error)
-      alert('決済ページの作成に失敗しました。もう一度お試しください。')
+      alert(t('pricing.error.paymentFailed'))
       setLoading(false)
       setLoadingPlanId(null)
     }
@@ -204,10 +206,10 @@ export function Pricing() {
       {/* ヘッダーセクション */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          グラフ作成がもっと快適に
+          {t('pricing.pageTitle')}
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-          あなたに最適なプランを選んでください
+          {t('pricing.pageSubtitle')}
         </p>
 
         {/* 料金切り替えトグル */}
@@ -220,7 +222,7 @@ export function Pricing() {
                 : 'text-gray-600 dark:text-gray-400'
             }`}
           >
-            月額
+            {t('pricing.monthly')}
           </button>
           <button
             onClick={() => setBillingPeriod('yearly')}
@@ -230,9 +232,9 @@ export function Pricing() {
                 : 'text-gray-600 dark:text-gray-400'
             }`}
           >
-            年額
+            {t('pricing.yearly')}
             <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
-              お得
+              {t('pricing.yearlyBadge')}
             </span>
           </button>
         </div>
@@ -279,12 +281,12 @@ export function Pricing() {
                     <span className="text-4xl md:text-5xl font-bold">
                       ¥{monthlyEquivalent.toLocaleString()}
                     </span>
-                    <span className="text-gray-500 dark:text-gray-400 mb-2">/月</span>
+                    <span className="text-gray-500 dark:text-gray-400 mb-2">{t('pricing.perMonth')}</span>
                   </div>
                   {billingPeriod === 'yearly' && plan.price > 0 && (
                     <div className="mt-2">
                       <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
-                        年間 ¥{displayPrice.toLocaleString()} ({savings}%お得)
+                        {t('pricing.yearlyTotal').replace('{price}', displayPrice.toLocaleString()).replace('{savings}', savings)}
                       </p>
                     </div>
                   )}
@@ -295,7 +297,7 @@ export function Pricing() {
                   )}
                   {plan.id !== 'free' && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      ≈ 1日たった¥{Math.round(monthlyEquivalent / 30)}
+                      {t('pricing.perDay').replace('{price}', Math.round(monthlyEquivalent / 30))}
                     </p>
                   )}
                 </div>
@@ -335,7 +337,7 @@ export function Pricing() {
                   {loading && loadingPlanId === plan.id ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      処理中...
+                      {t('pricing.processing')}
                     </>
                   ) : (
                     plan.cta
@@ -349,24 +351,24 @@ export function Pricing() {
 
       {/* FAQ セクション */}
       <div className="max-w-3xl mx-auto mt-16">
-        <h2 className="text-3xl font-bold text-center mb-8">よくある質問</h2>
+        <h2 className="text-3xl font-bold text-center mb-8">{t('pricing.faqTitle')}</h2>
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <h3 className="font-semibold text-lg mb-2">プランの変更はいつでもできますか？</h3>
+            <h3 className="font-semibold text-lg mb-2">{t('pricing.faq1.question')}</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              はい、いつでもプランの変更やキャンセルが可能です。プラン変更は即座に反映されます。
+              {t('pricing.faq1.answer')}
             </p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <h3 className="font-semibold text-lg mb-2">AIインサイトとは何ですか？</h3>
+            <h3 className="font-semibold text-lg mb-2">{t('pricing.faq2.question')}</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              AIがあなたのグラフデータを分析し、トレンドや特徴、改善点を自動的に提案する機能です。
+              {t('pricing.faq2.answer')}
             </p>
           </div>
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <h3 className="font-semibold text-lg mb-2">無料プランから始められますか？</h3>
+            <h3 className="font-semibold text-lg mb-2">{t('pricing.faq3.question')}</h3>
             <p className="text-gray-600 dark:text-gray-400">
-              もちろんです！まずは無料プランでサービスをお試しいただき、必要に応じてアップグレードしてください。
+              {t('pricing.faq3.answer')}
             </p>
           </div>
         </div>

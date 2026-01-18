@@ -22,6 +22,7 @@ import { Upload, BarChart3, LineChart, PieChart, Download, Palette, Settings, Ey
 import { aggregateDataForPieChart } from '@/lib/dataUtils.js'
 import { formatValueWithUnit, generateAxisLabel } from '@/lib/unitUtils.js'
 import { ChartInsights } from './ChartInsights.jsx'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 // Chart.jsの必要なコンポーネントを登録
 ChartJS.register(
@@ -38,14 +39,15 @@ ChartJS.register(
 )
 
 export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfigure }) {
+  const { t } = useLanguage()
   const chartRef = useRef(null)
   const [showDataLabels, setShowDataLabels] = useState(false)
   const [labelFontSizeAdjustment, setLabelFontSizeAdjustment] = useState(0) // -2〜+2の範囲で調整
 
   const chartTypes = [
-    { id: 'bar', icon: BarChart3, label: '棒グラフ', component: Bar },
-    { id: 'line', icon: LineChart, label: '折れ線グラフ', component: Line },
-    { id: 'pie', icon: PieChart, label: '円グラフ', component: Pie }
+    { id: 'bar', icon: BarChart3, label: t('chart.barChart'), component: Bar },
+    { id: 'line', icon: LineChart, label: t('chart.lineChart'), component: Line },
+    { id: 'pie', icon: PieChart, label: t('chart.pieChart'), component: Pie }
   ]
 
   // データ数に応じた自動フォントサイズ計算(ユーザー調整値を反映)
@@ -435,10 +437,10 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5" />
-            グラフの種類を選択
+            {t('chart.selectType')}
           </CardTitle>
           <CardDescription>
-            データに最適なグラフ形式を選んでください
+            {t('chart.selectDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -469,17 +471,17 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {showDataLabels ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
-              データ値の表示
+              {t('chart.dataLabels')}
             </CardTitle>
             <CardDescription>
-              グラフ上にデータ値を表示します。ダウンロード時にも反映されます。
+              {t('chart.dataLabelsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between space-x-2">
                 <Label htmlFor="data-labels" className="text-sm font-medium flex-1">
-                  グラフにデータ値を表示
+                  {t('chart.showDataLabels')}
                 </Label>
                 <Switch
                   id="data-labels"
@@ -493,17 +495,17 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="font-size-slider" className="text-sm font-medium">
-                        ラベルサイズ
+                        {t('chart.labelSize')}
                       </Label>
                       <span className="text-xs text-gray-500">
                         {labelFontSizeAdjustment === 0 
-                          ? `自動: ${calculateLabelFontSize(data.chartData?.length || 0)}px`
+                          ? `${t('chart.auto')}: ${calculateLabelFontSize(data.chartData?.length || 0)}px`
                           : `${calculateLabelFontSize(data.chartData?.length || 0)}px (${labelFontSizeAdjustment > 0 ? '+' : ''}${labelFontSizeAdjustment})`
                         }
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-400">小</span>
+                      <span className="text-xs text-gray-400">{t('chart.smaller')}</span>
                       <Slider
                         id="font-size-slider"
                         min={-2}
@@ -513,11 +515,11 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                         onValueChange={(value) => setLabelFontSizeAdjustment(value[0])}
                         className="flex-1"
                       />
-                      <span className="text-xs text-gray-400">大</span>
+                      <span className="text-xs text-gray-400">{t('chart.larger')}</span>
                     </div>
                   </div>
                   <p className="text-xs text-gray-500">
-                    💡 データ数が多い場合、ラベルが重なることがあります
+                    {t('chart.labelOverlapWarning')}
                   </p>
                 </div>
               )}
@@ -529,9 +531,9 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
       {/* Chart Display */}
       <Card className="glass-card stagger-animation">
         <CardHeader>
-          <CardTitle>生成されたグラフ</CardTitle>
+          <CardTitle>{t('chart.generatedChart')}</CardTitle>
           <CardDescription>
-            {data.xColumn} × {data.yColumn} ({data.chartData?.length || 0} データポイント)
+            {data.xColumn} × {data.yColumn} ({data.chartData?.length || 0} {t('chart.dataPoints')})
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -562,7 +564,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
       {/* Data Summary */}
       <Card className="glass-card stagger-animation">
         <CardHeader>
-          <CardTitle>データサマリー</CardTitle>
+          <CardTitle>{t('chart.dataSummary')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
@@ -570,19 +572,19 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {data.chartData?.length || 0}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">データ数</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.dataCount')}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatValueWithUnit(Math.max(...(data.values || [0])), data.unitSettings?.y || {}, true)}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">最大値</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.maximum')}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatValueWithUnit(Math.min(...(data.values || [0])), data.unitSettings?.y || {}, true)}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">最小値</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.minimum')}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -592,7 +594,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                   true
                 )}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">平均値</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.average')}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -602,7 +604,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                   true
                 )}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">中央値</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.median')}</p>
             </div>
           </div>
         </CardContent>
@@ -616,7 +618,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           onClick={onReset}
         >
           <Upload className="h-4 w-4 mr-2" />
-          ホームに戻る
+          {t('chart.backToHome')}
         </Button>
         <Button 
           variant="outline" 
@@ -624,14 +626,14 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           onClick={onReconfigure}
         >
           <Settings className="h-4 w-4 mr-2" />
-          条件を変えて再生成
+          {t('chart.reconfigure')}
         </Button>
         <Button 
           className="glass-button bg-black text-white hover:bg-gray-800" 
           onClick={handleDownload}
         >
           <Download className="h-4 w-4 mr-2" />
-          グラフをダウンロード
+          {t('chart.downloadImage')}
         </Button>
       </div>
     </div>

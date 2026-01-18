@@ -2,6 +2,7 @@ import { Routes, Route, Link } from 'react-router-dom'
 import { Header } from '@/components/Header.jsx'
 import { SocialLinks } from '@/components/SocialLinks.jsx'
 import { ProtectedRoute } from '@/components/ProtectedRoute.jsx'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { Home } from '@/pages/Home.jsx'
 import { UpdatesPage } from '@/pages/UpdatesPage.jsx'
 import { MyPage } from '@/pages/MyPage.jsx'
@@ -13,6 +14,7 @@ import { PrivacyPage } from '@/pages/PrivacyPage.jsx'
 import './App.css'
 
 function App() {
+  const { t } = useLanguage()
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <Header />
@@ -45,23 +47,23 @@ function App() {
                 to="/terms" 
                 className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
               >
-                利用規約
+                {t('footer.terms')}
               </Link>
               <Link 
                 to="/privacy" 
                 className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
               >
-                プライバシーポリシー
+                {t('footer.privacy')}
               </Link>
               <Link 
                 to="/legal-notice" 
                 className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors"
               >
-                特定商取引法に基づく表記
+                {t('footer.legal')}
               </Link>
             </div>
             <p className="text-gray-600 dark:text-gray-300">
-              &copy; 2025 Grafico. All rights reserved.
+              {t('footer.copyright')}
             </p>
           </div>
         </div>

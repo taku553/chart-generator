@@ -14,8 +14,10 @@ import { SeparateHeaderSelector } from '@/components/SeparateHeaderSelector.jsx'
 import { SheetSelector } from '@/components/SheetSelector.jsx'
 import { ChartTitleSettings } from '@/components/ChartTitleSettings.jsx'
 import { ParenthesesInterpretationSelector } from '@/components/ParenthesesInterpretationSelector.jsx'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfiguration = null, onReset }) {
+  const { t } = useLanguage()
   const [file, setFile] = useState(null)
   const [sheetNames, setSheetNames] = useState(null)
   const [selectedSheet, setSelectedSheet] = useState(null)
@@ -598,9 +600,9 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
       {!file && (
         <Card className="glass-card fade-in stagger-animation float-animation">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl mb-2">データファイルをアップロード</CardTitle>
+            <CardTitle className="text-2xl mb-2">{t('upload.title')}</CardTitle>
             <CardDescription className="text-lg">
-              グラフ化したいデータを含むCSVまたはExcelファイルをアップロードしてください
+              {t('upload.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -620,16 +622,16 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               }`} />
               <div className="space-y-2">
                 <p className="text-lg font-medium">
-                  {dragActive ? 'ファイルをドロップしてください' : 'ファイルをドラッグ&ドロップ'}
+                  {dragActive ? t('upload.dropzone') : t('home.orDragDrop')}
                 </p>
-                <p className="text-gray-500">または</p>
+                <p className="text-gray-500">{t('upload.or')}</p>
                 <Button 
                   variant="outline" 
                   className="glass-button"
                   onClick={() => document.getElementById('file-input').click()}
                   disabled={loading}
                 >
-                  ファイルを選択
+                  {t('upload.selectFile')}
                 </Button>
                 <input
                   id="file-input"
@@ -645,12 +647,11 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                対応ファイル形式
+                {t('upload.supportedFormats')}
               </h3>
               <ul className="text-blue-800 dark:text-blue-200 space-y-1 text-sm">
-                <li>• CSV形式またはExcel形式（.xlsx, .xls）</li>
-                <li>• 複雑なレイアウトの統計表にも対応</li>
-                <li>• アップロード後、データ領域を選択できます</li>
+                <li>• CSV, Excel (.xlsx, .xls)</li>
+                <li>• {t('upload.maxSize')}</li>
               </ul>
             </div>
           </CardContent>
@@ -668,7 +669,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               </p>
               {sheetNames && sheetNames.length > 1 && (
                 <p className="text-green-600 dark:text-green-300 text-sm">
-                  {sheetNames.length} 個のシートが見つかりました
+                  {sheetNames.length} {t('upload.sheetsFound')}
                 </p>
               )}
             </div>
@@ -678,7 +679,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               onClick={handleReset}
               className="text-green-700 hover:text-green-800"
             >
-              削除
+              {t('upload.delete')}
             </Button>
           </div>
         </div>
@@ -703,7 +704,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
                 {file.name}
               </p>
               <p className="text-green-600 dark:text-green-300 text-sm">
-                {selectedSheet ? `シート: ${selectedSheet} - ` : ''}{rawRows?.length || 0} 行のデータ
+                {selectedSheet ? `${t('upload.sheet')}: ${selectedSheet} - ` : ''}{rawRows?.length || 0} {t('upload.rowsOfData')}
               </p>
             </div>
             <Button 
@@ -712,7 +713,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               onClick={handleReset}
               className="text-green-700 hover:text-green-800"
             >
-              削除
+              {t('upload.delete')}
             </Button>
           </div>
         </div>
@@ -734,7 +735,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
           <div className="inline-flex items-center gap-2">
             <div className="loading-spinner"></div>
             <span className="text-gray-600 dark:text-gray-300 shimmer">ファイルを処理中...</span>
-          </div>
+          </div>{t('upload.loading')}
         </div>
       )}
 
@@ -1081,9 +1082,9 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
       {/* サンプルデータ表示エリア */}
       <Card className="glass-card fade-in stagger-animation">
         <CardHeader>
-          <CardTitle>グラフ作成に最適なデータ構成の例</CardTitle>
+          <CardTitle>{t('upload.sampleDataTitle')}</CardTitle>
           <CardDescription>
-            どのような形式のファイルをアップロードすればスムーズにグラフが作成できるか、以下の例でご確認ください。
+            {t('upload.sampleDataDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1093,12 +1094,12 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
             onClick={() => setShowSampleData(!showSampleData)}
           >
             <Table className="h-4 w-4 mr-2" />
-            {showSampleData ? 'サンプルデータを非表示' : 'サンプルデータを表示'}
+            {showSampleData ? t('upload.hideSampleData') : t('upload.showSampleData')}
           </Button>
 
           {showSampleData && sampleData && (
             <div className="mt-4 slide-in-bottom">
-              <h4 className="text-sm font-medium mb-2">推奨されるデータ構成例</h4>
+              <h4 className="text-sm font-medium mb-2">{t('upload.recommendedFormat')}</h4>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
                   <thead className="bg-gray-50 dark:bg-gray-800">

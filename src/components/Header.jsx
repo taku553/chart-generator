@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { NavigationMenu } from './NavigationMenu.jsx'
+import { LanguageSwitcher } from './LanguageSwitcher.jsx'
 import { AuthModal } from './AuthModal.jsx'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { Button } from './ui/button.jsx'
 import {
   DropdownMenu,
@@ -20,6 +22,7 @@ export function Header({ onResetClick, hasData }) {
   const navigate = useNavigate()
   const isHomePage = location.pathname === '/'
   const { user, logOut, loading } = useAuth()
+  const { t } = useLanguage()
   const [authModalOpen, setAuthModalOpen] = useState(false)
 
   const handleLogoClick = (e) => {
@@ -66,7 +69,8 @@ export function Header({ onResetClick, hasData }) {
             </h1>
           </Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <NavigationMenu />
             
             {/* 認証ボタン */}
@@ -85,7 +89,7 @@ export function Header({ onResetClick, hasData }) {
                     <DropdownMenuContent className="w-56" align="end" forceMount>
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none">
+                          <p className="text-sm ft('auth.user')dium leading-none">
                             {user.displayName || 'ユーザー'}
                           </p>
                           <p className="text-xs leading-none text-muted-foreground">
@@ -96,23 +100,23 @@ export function Header({ onResetClick, hasData }) {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => navigate('/mypage')}>
                         <UserIcon className="mr-2 h-4 w-4" />
-                        <span>マイページ</span>
+                        <span>{t('menu.myPage')}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem disabled className="cursor-default">
                         <Crown className="mr-2 h-4 w-4" />
-                        <span className="text-foreground">プラン: {user.plan === 'free' ? '無料' : '有料'}</span>
+                        <span className="text-foreground">{t('menu.plan')}: {user.plan === 'free' ? t('pricing.free') : t('pricing.pro')}</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
-                        <span>ログアウト</span>
+                        <span>{t('menu.logout')}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (
                   <Button onClick={() => setAuthModalOpen(true)} variant="default">
                     <LogIn className="mr-2 h-4 w-4" />
-                    ログイン
+                    {t('menu.login')}
                   </Button>
                 )}
               </>
@@ -121,7 +125,7 @@ export function Header({ onResetClick, hasData }) {
         </div>
         {isHomePage && (
           <p className="text-gray-600 dark:text-gray-300 mt-2">
-            統計データから美しいグラフを生成
+            {t('home.subtitle')}
           </p>
         )}
       </div>

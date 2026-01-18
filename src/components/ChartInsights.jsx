@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { auth } from '@/lib/firebase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { Sparkles, AlertCircle, Loader2, Crown, TrendingUp } from 'lucide-react'
 
 export function ChartInsights({ chartData, isVisible = true }) {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -145,11 +147,11 @@ export function ChartInsights({ chartData, isVisible = true }) {
       <CardHeader>
         <div className="flex items-center gap-2">
           <Sparkles className="size-5 text-purple-500" />
-          <CardTitle>AI解説機能</CardTitle>
+          <CardTitle>{t('insights.title')}</CardTitle>
           {userPlan === 'pro' && (
             <span className="ml-auto flex items-center gap-1 text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
               <Crown className="size-3" />
-              Pro - 無制限
+              {t('insights.proUnlimited')}
             </span>
           )}
           {userPlan === 'standard' && (
@@ -160,10 +162,10 @@ export function ChartInsights({ chartData, isVisible = true }) {
           )}
         </div>
         <CardDescription>
-          グラフデータの傾向や特徴についてAIに質問できます
-          {isFreeUser && '（無料プラン: 5回/日）'}
-          {userPlan === 'standard' && '（50回/日）'}
-          {userPlan === 'pro' && '（無制限）'}
+          {t('insights.description')}
+          {isFreeUser && t('insights.freeLimit')}
+          {userPlan === 'standard' && t('insights.standardLimit')}
+          {userPlan === 'pro' && t('insights.proLimit')}
         </CardDescription>
       </CardHeader>
 
@@ -172,11 +174,11 @@ export function ChartInsights({ chartData, isVisible = true }) {
         {isFreeUser && (
           <Alert className="border-amber-200 bg-amber-50">
             <Crown className="text-amber-600" />
-            <AlertTitle className="text-amber-900">アップグレードで回数制限を大幅拡張</AlertTitle>
+            <AlertTitle className="text-amber-900">{t('insights.upgradeTitle')}</AlertTitle>
             <AlertDescription className="text-amber-800">
-              現在の利用制限: 5回/日
+              {t('insights.currentLimit')}
               <br />
-              Standardプランなら50回/日、Proプランなら無制限で利用できます。
+              {t('insights.upgradeDescription')}
               <br />
               <Button
                 variant="default"
@@ -187,7 +189,7 @@ export function ChartInsights({ chartData, isVisible = true }) {
                 }}
               >
                 <Crown className="mr-2 size-4" />
-                プランを見る
+                {t('insights.viewPlans')}
               </Button>
             </AlertDescription>
           </Alert>
@@ -198,7 +200,7 @@ export function ChartInsights({ chartData, isVisible = true }) {
           <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center gap-2 text-sm text-blue-900">
               <TrendingUp className="size-4" />
-              <span>本日の残り利用回数</span>
+              <span>{t('insights.remainingUsage')}</span>
             </div>
             <span className="text-lg font-bold text-blue-700">
               {remainingUsage} / {dailyLimit}
@@ -211,17 +213,17 @@ export function ChartInsights({ chartData, isVisible = true }) {
           <div className="flex items-center justify-center p-3 bg-purple-50 rounded-lg border border-purple-200">
             <div className="flex items-center gap-2 text-sm text-purple-900">
               <Crown className="size-4" />
-              <span className="font-bold">無制限でご利用いただけます</span>
+              <span className="font-bold">{t('insights.unlimited')}</span>
             </div>
           </div>
         )}
 
         {/* 質問入力フォーム */}
         <div className="space-y-2">
-          <Label htmlFor="question">グラフについて質問してください</Label>
+          <Label htmlFor="question">{t('insights.questionLabel')}</Label>
           <Textarea
             id="question"
-            placeholder="例：このデータの傾向を教えてください。最大値と最小値の差が大きい理由は何ですか？"
+            placeholder={t('insights.questionPlaceholder')}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -233,9 +235,9 @@ export function ChartInsights({ chartData, isVisible = true }) {
             className="resize-none"
           />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Enterキーで送信、Shift+Enterで改行</span>
+            <span>{t('insights.submitHint')}</span>
             <span className={question.length > 450 ? 'text-destructive' : ''}>
-              {question.length} / 500
+              {question.length} / 500 {t('insights.characterCount')}
             </span>
           </div>
         </div>
@@ -249,12 +251,12 @@ export function ChartInsights({ chartData, isVisible = true }) {
           {loading ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              分析中...
+              {t('insights.analyzing')}
             </>
           ) : (
             <>
               <Sparkles className="mr-2 size-4" />
-              AI解説を取得
+              {t('insights.getInsights')}
             </>
           )}
         </Button>
@@ -263,7 +265,7 @@ export function ChartInsights({ chartData, isVisible = true }) {
         {error && (
           <Alert variant="destructive">
             <AlertCircle />
-            <AlertTitle>エラー</AlertTitle>
+            <AlertTitle>{t('insights.error')}</AlertTitle>
             <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
           </Alert>
         )}
@@ -273,7 +275,7 @@ export function ChartInsights({ chartData, isVisible = true }) {
           <div className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="size-4 text-purple-600" />
-              <span className="text-sm font-semibold text-purple-900">AI解説結果</span>
+              <span className="text-sm font-semibold text-purple-900">{t('insights.resultTitle')}</span>
             </div>
             <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
               {answer}
@@ -283,15 +285,15 @@ export function ChartInsights({ chartData, isVisible = true }) {
 
         {/* 注意事項 */}
         <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
-          <p className="font-medium mb-1">💡 ご利用上の注意</p>
+          <p className="font-medium mb-1">{t('insights.notesTitle')}</p>
           <ul className="space-y-0.5 list-disc list-inside">
             {isUnlimited ? (
-              <li>Pro会員は無制限でご利用いただけます</li>
+              <li>{t('insights.noteUnlimited')}</li>
             ) : (
-              <li>1日あたり{dailyLimit || '制限'}回まで利用可能です</li>
+              <li>{t('insights.noteDailyLimit').replace('{limit}', dailyLimit || '制限')}</li>
             )}
-            <li>利用回数は毎日0時（日本時間）にリセットされます</li>
-            <li>AIの回答は参考情報であり、完全な正確性を保証するものではありません</li>
+            <li>{t('insights.noteReset')}</li>
+            <li>{t('insights.noteAccuracy')}</li>
           </ul>
         </div>
       </CardContent>
