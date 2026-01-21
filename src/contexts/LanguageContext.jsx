@@ -293,6 +293,8 @@ const translations = {
     
     // UpdatesPage
     'updates.title': '更新情報',
+    'updates.9.title': '英語切り替え機能を実装',
+    'updates.9.description': '日本語・英語の切り替えに対応しました。語順の違いを考慮して翻訳データ側で各言語の自然な語順を定義し、コンポーネント側は値を渡す構造にした方がいいのは勉強になった。',
     'updates.8.title': '利用規約とプライバシーポリシー、特商法ページ、Google Analyticsを導入',
     'updates.8.description': 'Stripe本番環境への移行準備として、利用規約とプライバシーポリシーを作成。有料プランを正式に提供できる環境を整えました。特定商取引法に基づく表記も最新情報に更新。アクセス解析のためGoogle Analyticsも導入。そして、広告ブロッカーによるブロックを回避するため、ファイル名をPrivacyPage.jsxとTermsPage.jsxに変更しています。',
     'updates.7.title': 'AIインサイト機能を実装',
@@ -792,6 +794,8 @@ const translations = {
     
     // UpdatesPage
     'updates.title': 'Updates',
+    'updates.9.title': 'Implemented English Language Switch Feature',
+    'updates.9.description': "Support was added for switching between Japanese and English. I learned that considering differences in word order, it's better to have the translation data define each language's natural word order, with the component simply passing values.",
     'updates.8.title': 'Added Terms of Service, Privacy Policy, Legal Notice, and Google Analytics',
     'updates.8.description': 'In preparation for moving to Stripe production environment, we created Terms of Service and Privacy Policy. Now ready to officially offer paid plans. Updated Legal Notice with latest information. Introduced Google Analytics for access analysis. Renamed files to PrivacyPage.jsx and TermsPage.jsx to avoid ad blocker blocking.',
     'updates.7.title': 'Implemented AI Insights Feature',
