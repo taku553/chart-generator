@@ -3,15 +3,75 @@
  */
 
 /**
- * 単位のプリセット定義
+ * 単位のプリセット定義（翻訳キーを使用）
+ * @param {Function} t - 翻訳関数
  */
+export const getUnitPresets = (t) => ({
+  currency: {
+    label: t('unit.type.currency'),
+    options: [
+      { value: 'yen', label: t('unit.currency.yen'), symbol: t('unit.currency.yen'), prefix: '¥', suffix: '' },
+      { value: 'dollar', label: t('unit.currency.dollar'), symbol: t('unit.currency.dollar'), prefix: '$', suffix: '' },
+      { value: 'euro', label: t('unit.currency.euro'), symbol: t('unit.currency.euro'), prefix: '€', suffix: '' },
+    ]
+  },
+  weight: {
+    label: t('unit.type.weight'),
+    options: [
+      { value: 'kg', label: 'kg', symbol: 'kg', suffix: 'kg' },
+      { value: 't', label: 't', symbol: 't', suffix: 't' },
+      { value: 'g', label: 'g', symbol: 'g', suffix: 'g' },
+    ]
+  },
+  count: {
+    label: t('unit.type.count'),
+    options: [
+      { value: 'people', label: t('unit.count.people'), symbol: t('unit.count.people'), suffix: t('unit.count.people') },
+      { value: 'items', label: t('unit.count.items'), symbol: t('unit.count.items'), suffix: t('unit.count.items') },
+      { value: 'units', label: t('unit.count.units'), symbol: t('unit.count.units'), suffix: t('unit.count.units') },
+    ]
+  },
+  percentage: {
+    label: t('unit.type.percentage'),
+    options: [
+      { value: 'percent', label: '%', symbol: '%', suffix: '%' },
+    ]
+  },
+  none: {
+    label: t('unit.type.none'),
+    options: [
+      { value: 'none', label: t('unit.none.none'), symbol: '', suffix: '' },
+    ]
+  }
+})
+
+/**
+ * スケール(基準値)のプリセット（翻訳キーを使用）
+ * @param {Function} t - 翻訳関数
+ */
+export const getScalePresets = (t) => [
+  { value: 1, label: t('unit.scale.1'), multiplier: 1 },
+  { value: 10, label: t('unit.scale.10'), multiplier: 10 },
+  { value: 100, label: t('unit.scale.100'), multiplier: 100 },
+  { value: 1000, label: t('unit.scale.1000'), multiplier: 1000 },
+  { value: 10000, label: t('unit.scale.10000'), multiplier: 10000 },
+  { value: 100000, label: t('unit.scale.100000'), multiplier: 100000 },
+  { value: 1000000, label: t('unit.scale.1000000'), multiplier: 1000000 },
+  { value: 10000000, label: t('unit.scale.10000000'), multiplier: 10000000 },
+  { value: 100000000, label: t('unit.scale.100000000'), multiplier: 100000000 },
+  { value: 1000000000, label: t('unit.scale.1000000000'), multiplier: 1000000000 },
+  { value: 10000000000, label: t('unit.scale.10000000000'), multiplier: 10000000000 },
+  { value: 100000000000, label: t('unit.scale.100000000000'), multiplier: 100000000000 },
+]
+
+// 後方互換性のため、古い定義を維持（翻訳なし）
 export const UNIT_PRESETS = {
   currency: {
     label: '通貨',
     options: [
-      { value: 'yen', label: '円', symbol: '円', suffix: '円' },
-      { value: 'dollar', label: 'ドル', symbol: 'ドル', suffix: 'ドル' },
-      { value: 'euro', label: 'ユーロ', symbol: 'ユーロ', suffix: 'ユーロ' },
+      { value: 'yen', label: '円', symbol: '円', prefix: '¥', suffix: '' },
+      { value: 'dollar', label: 'ドル', symbol: 'ドル', prefix: '$', suffix: '' },
+      { value: 'euro', label: 'ユーロ', symbol: 'ユーロ', prefix: '€', suffix: '' },
     ]
   },
   weight: {
@@ -130,55 +190,124 @@ export const formatValue = (value, options = {}) => {
  * @param {boolean} includeScaleLabel - スケールラベルを含めるかどうか
  * @returns {string} フォーマットされた文字列
  */
-export const formatValueWithUnit = (value, unitConfig, includeScaleLabel = false) => {
+export const formatValueWithUnit = (value, unitConfig, includeScaleLabel = false, t = null) => {
   if (!unitConfig) return String(value)
 
   const {
     scale = 1,
-    unit = '',
-    scaleLabel = '',
+    unitType = 'none',
+    selectedValue = '',
     decimals = 0,
     useThousandSeparator = true,
-    prefix = '',
-    suffix = unit
   } = unitConfig
+
+  // 翻訳関数がある場合は現在の言語で単位を取得
+  let unit = unitConfig.unit || ''
+  let scaleLabel = unitConfig.scaleLabel || ''
+  let prefix = unitConfig.prefix || ''
+  let suffix = unitConfig.suffix || ''
+  
+  if (t && unitType && selectedValue) {
+    const translatedUnitInfo = getUnitFromPreset(unitType, selectedValue, t)
+    if (translatedUnitInfo.unit) {
+      unit = translatedUnitInfo.unit
+    }
+    // prefix と suffix もプリセットから取得
+    if (translatedUnitInfo.prefix !== undefined) {
+      prefix = translatedUnitInfo.prefix
+    }
+    if (translatedUnitInfo.suffix !== undefined) {
+      suffix = translatedUnitInfo.suffix
+    }
+  }
+  
+  if (t && scale > 1) {
+    const translatedScaleLabel = getScaleLabel(scale, t)
+    if (translatedScaleLabel) {
+      scaleLabel = translatedScaleLabel
+    }
+  }
 
   // スケールを適用した値を表示
   const scaledValue = value
 
   // スケールラベルを含める場合（ツールチップやデータサマリー用）
+  // suffix が空の場合（通貨など）は prefix + scaleLabel を使用
+  let finalPrefix = prefix
   let finalSuffix = suffix
-  if (includeScaleLabel && scaleLabel && unit) {
-    finalSuffix = `${scaleLabel}${unit}`
-  } else if (includeScaleLabel && scaleLabel && !unit) {
-    finalSuffix = scaleLabel
+  
+  if (includeScaleLabel && scaleLabel) {
+    if (suffix) {
+      // suffix がある場合（人、kg など）：scaleLabel + suffix
+      finalSuffix = `${scaleLabel}${suffix}`
+    } else if (prefix) {
+      // prefix のみの場合（通貨など）：scaleLabel + prefix を前に
+      finalPrefix = `${scaleLabel}${prefix}`
+    } else {
+      // どちらもない場合：scaleLabel のみ
+      finalSuffix = scaleLabel
+    }
   }
 
   return formatValue(scaledValue, {
     decimals,
     useThousandSeparator,
-    prefix,
+    prefix: finalPrefix,
     suffix: finalSuffix
   })
 }
 
 /**
- * 軸ラベルを生成する
+ * 軸ラベルを生成する（翻訳対応版）
  * @param {string} columnName - 列名
  * @param {Object} unitConfig - 単位設定
+ * @param {Function} t - 翻訳関数（オプション）
  * @returns {string} 軸ラベル
  */
-export const generateAxisLabel = (columnName, unitConfig) => {
-  if (!unitConfig || !unitConfig.unit) {
+export const generateAxisLabel = (columnName, unitConfig, t = null) => {
+  if (!unitConfig) {
     return columnName
   }
 
-  const { unit, scaleLabel } = unitConfig
+  const { unitType = 'none', selectedValue = '', scale = 1 } = unitConfig
 
-  if (scaleLabel && unit) {
-    return `${columnName} (${scaleLabel}${unit})`
-  } else if (unit) {
-    return `${columnName} (${unit})`
+  // 翻訳関数がある場合は現在の言語で単位を取得
+  let unit = unitConfig.unit || ''
+  let scaleLabel = unitConfig.scaleLabel || ''
+  let prefix = unitConfig.prefix || ''
+  let suffix = unitConfig.suffix || ''
+  
+  if (t && unitType && selectedValue) {
+    const translatedUnitInfo = getUnitFromPreset(unitType, selectedValue, t)
+    if (translatedUnitInfo.unit) {
+      unit = translatedUnitInfo.unit
+    }
+    if (translatedUnitInfo.prefix !== undefined) {
+      prefix = translatedUnitInfo.prefix
+    }
+    if (translatedUnitInfo.suffix !== undefined) {
+      suffix = translatedUnitInfo.suffix
+    }
+  }
+  
+  if (t && scale > 1) {
+    const translatedScaleLabel = getScaleLabel(scale, t)
+    if (translatedScaleLabel) {
+      scaleLabel = translatedScaleLabel
+    }
+  }
+
+  // 表示する単位を決定（prefix があれば prefix、なければ suffix）
+  const displayUnit = prefix || suffix
+  
+  if (!displayUnit) {
+    return columnName
+  }
+
+  if (scaleLabel && displayUnit) {
+    return `${columnName} (${scaleLabel}${displayUnit})`
+  } else if (displayUnit) {
+    return `${columnName} (${displayUnit})`
   }
 
   return columnName
@@ -204,13 +333,17 @@ export const getDefaultUnitConfig = (axis = 'x') => {
 }
 
 /**
- * プリセットから単位設定を取得
+ * プリセットから単位設定を取得（翻訳対応版）
  * @param {string} presetCategory - プリセットカテゴリー
  * @param {string} presetValue - プリセット値
+ * @param {Function} t - 翻訳関数（オプション）
  * @returns {Object} 単位設定の一部
  */
-export const getUnitFromPreset = (presetCategory, presetValue) => {
-  const category = UNIT_PRESETS[presetCategory]
+export const getUnitFromPreset = (presetCategory, presetValue, t = null) => {
+  // 翻訳関数がある場合は翻訳対応プリセットを使用
+  const presets = t ? getUnitPresets(t) : UNIT_PRESETS
+  
+  const category = presets[presetCategory]
   if (!category) return {}
 
   const preset = category.options.find(opt => opt.value === presetValue)
@@ -219,24 +352,27 @@ export const getUnitFromPreset = (presetCategory, presetValue) => {
   return {
     unitType: presetCategory,
     unit: preset.label,
-    suffix: preset.suffix,
-    prefix: '' // 接頭辞は使用しない（すべて接尾辞に統一）
+    suffix: preset.suffix || '',
+    prefix: preset.prefix || '' 
   }
 }
 
 /**
- * スケールプリセットからラベルを取得
+ * スケールプリセットからラベルを取得（翻訳対応版）
  * @param {number} scaleValue - スケール値
+ * @param {Function} t - 翻訳関数（オプション）
  * @returns {string} スケールラベル
  */
-export const getScaleLabel = (scaleValue) => {
+export const getScaleLabel = (scaleValue, t = null) => {
   // 基準値が1（そのまま）の場合は空文字列を返す
   // これにより、グラフ表示時に単位のみが表示される（例: "円" であって "そのまま円" ではない）
   if (scaleValue === 1) {
     return ''
   }
   
-  const preset = SCALE_PRESETS.find(p => p.value === scaleValue)
+  // 翻訳関数がある場合は翻訳対応プリセットを使用
+  const presets = t ? getScalePresets(t) : SCALE_PRESETS
+  const preset = presets.find(p => p.value === scaleValue)
   if (!preset) return ''
   
   // ラベルから括弧部分を除いた部分を返す

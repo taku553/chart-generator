@@ -758,7 +758,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               onClick={() => setSelectedRange(null)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              前に戻る
+              {t('common.goBack')}
             </Button>
           </div>
           <SeparateHeaderSelector
@@ -814,7 +814,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               }}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              前に戻る
+              {t('common.goBack')}
             </Button>
           </div>
           <HeaderRangeSelector
@@ -839,7 +839,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               }}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              前に戻る
+              {t('common.goBack')}
             </Button>
           </div>
           <DataLabelRangeSelector
@@ -866,7 +866,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               }}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              前に戻る
+              {t('common.goBack')}
             </Button>
             
             <Button 
@@ -875,14 +875,14 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               onClick={onReset}
             >
               <Home className="h-4 w-4 mr-2" />
-              最初に戻る
+              {t('common.returnToStart')}
             </Button>
           </div>
           <Card className="glass-card fade-in stagger-animation">
             <CardHeader>
-              <CardTitle>軸の設定</CardTitle>
+              <CardTitle>{t('axis.title')}</CardTitle>
               <CardDescription>
-                グラフの横軸（X軸）と縦軸（Y軸）に使用する列を選択してください
+                {t('axis.description')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -912,10 +912,10 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">横軸（X軸）</label>
+                      <label className="text-sm font-medium">{t('axis.xAxisLabel')}</label>
                       <Select value={xColumn} onValueChange={setXColumn}>
                         <SelectTrigger className="glass-button">
-                          <SelectValue placeholder="列を選択" />
+                          <SelectValue placeholder={t('axis.selectColumn')} />
                         </SelectTrigger>
                         <SelectContent>
                           {availableHeaders.map((header) => (
@@ -928,10 +928,10 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
                     </div>
                     
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">縦軸（Y軸）</label>
+                      <label className="text-sm font-medium">{t('axis.yAxisLabel')}</label>
                       <Select value={yColumn} onValueChange={setYColumn}>
                         <SelectTrigger className="glass-button">
-                          <SelectValue placeholder="列を選択" />
+                          <SelectValue placeholder={t('axis.selectColumn')} />
                         </SelectTrigger>
                         <SelectContent>
                           {availableHeaders.map((header) => (
@@ -966,7 +966,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               
               return (
                 <div className="mt-4">
-                  <h4 className="text-sm font-medium mb-2">データプレビュー（最初の3行）</h4>
+                  <h4 className="text-sm font-medium mb-2">{t('axis.dataPreview')}</h4>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
                       <thead className="bg-gray-50 dark:bg-gray-800">
@@ -1000,7 +1000,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               onClick={handleAxisSelect}
               disabled={!xColumn || !yColumn}
             >
-              次へ：単位とスケールを設定
+              {t('axis.next')}
             </Button>
           </CardContent>
         </Card>
@@ -1021,7 +1021,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               }}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              前に戻る
+              {t('common.goBack')}
             </Button>
           </div>
           <ParenthesesInterpretationSelector
@@ -1067,7 +1067,7 @@ export function FileUpload({ onDataLoaded, isReconfiguring = false, savedConfigu
               onClick={() => setUnitSettings(null)}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              前に戻る
+              {t('common.goBack')}
             </Button>
           </div>
           <ChartTitleSettings

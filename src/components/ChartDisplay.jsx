@@ -210,13 +210,13 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                 const total = chartData.datasets[0].data.reduce((sum, val) => sum + val, 0)
                 const percentage = ((value / total) * 100).toFixed(1)
                 
-                label = `${formatValueWithUnit(value, yUnit, true)} (${percentage}%)`
+                label = `${formatValueWithUnit(value, yUnit, true, t)} (${percentage}%)`
                 
                 return label
               } else {
                 // 棒グラフ・折れ線グラフの場合: データ値のみ表示（グラフタイトル名を除外）
                 if (context.parsed.y !== null && context.parsed.y !== undefined) {
-                  label = formatValueWithUnit(context.parsed.y, yUnit, true)
+                  label = formatValueWithUnit(context.parsed.y, yUnit, true, t)
                 }
               }
               return label
@@ -294,7 +294,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           formatter: (value) => {
             // 単位設定に応じてフォーマット
             if (yUnit.enabled && yUnit.unit) {
-              return formatValueWithUnit(value, yUnit, true)
+              return formatValueWithUnit(value, yUnit, true, t)
             }
             return value.toLocaleString()
           },
@@ -326,7 +326,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           },
           title: {
             display: true,
-            text: generateAxisLabel(data?.xColumn || 'X軸', xUnit),
+            text: generateAxisLabel(data?.xColumn || 'X軸', xUnit, t),
             color: 'rgb(75, 85, 99)',
             font: {
               size: 13,
@@ -351,7 +351,7 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
           },
           title: {
             display: true,
-            text: generateAxisLabel(data?.yColumn || 'Y軸', yUnit),
+            text: generateAxisLabel(data?.yColumn || 'Y軸', yUnit, t),
             color: 'rgb(75, 85, 99)',
             font: {
               size: 13,
@@ -576,13 +576,13 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatValueWithUnit(Math.max(...(data.values || [0])), data.unitSettings?.y || {}, true)}
+                {formatValueWithUnit(Math.max(...(data.values || [0])), data.unitSettings?.y || {}, true, t)}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.maximum')}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatValueWithUnit(Math.min(...(data.values || [0])), data.unitSettings?.y || {}, true)}
+                {formatValueWithUnit(Math.min(...(data.values || [0])), data.unitSettings?.y || {}, true, t)}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.minimum')}</p>
             </div>
@@ -591,7 +591,8 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                 {formatValueWithUnit(
                   (data.values?.reduce((a, b) => a + b, 0) / data.values?.length || 0),
                   data.unitSettings?.y || {},
-                  true
+                  true,
+                  t
                 )}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.average')}</p>
@@ -601,7 +602,8 @@ export function ChartDisplay({ data, chartType, setChartType, onReset, onReconfi
                 {formatValueWithUnit(
                   calculateMedian(data.values),
                   data.unitSettings?.y || {},
-                  true
+                  true,
+                  t
                 )}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-300">{t('chart.median')}</p>

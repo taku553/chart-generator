@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ChevronDown, Table2, Home } from 'lucide-react'
 import { extractDataRange } from '@/lib/dataTransform'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initialRange = null, onReset }) {
+  const { t } = useLanguage()
   const [startRow, setStartRow] = useState(initialRange?.startRow ?? 0)
   const [endRow, setEndRow] = useState(initialRange?.endRow ?? Math.min(rawRows.length - 1, 19))
   const [startCol, setStartCol] = useState(initialRange?.startCol ?? 0)
@@ -68,12 +70,12 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Table2 className="h-5 w-5" />
-          {mode === 'header' ? '列ヘッダー領域を選択' : 'データ領域を選択'}
+          {mode === 'header' ? t('dataRange.titleHeader') : t('dataRange.titleData')}
         </CardTitle>
         <CardDescription>
           {mode === 'header' 
-            ? '項目名（列ヘッダー）が記載されている範囲を指定してください。複数行にまたがる場合は全て含めてください。'
-            : 'グラフ化したいデータの範囲を指定してください。青色でハイライトされた領域が選択されます。'
+            ? t('dataRange.descriptionHeader')
+            : t('dataRange.descriptionData')
           }
         </CardDescription>
       </CardHeader>
@@ -81,7 +83,7 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
         {/* 範囲指定コントロール */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="space-y-2">
-            <Label>開始行</Label>
+            <Label>{t('dataRange.startRow')}</Label>
             <Input
               type="number"
               value={startRowInput}
@@ -102,7 +104,7 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
             />
           </div>
           <div className="space-y-2">
-            <Label>終了行</Label>
+            <Label>{t('dataRange.endRow')}</Label>
             <Input
               type="number"
               value={endRowInput}
@@ -123,7 +125,7 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
             />
           </div>
           <div className="space-y-2">
-            <Label>開始列</Label>
+            <Label>{t('dataRange.startCol')}</Label>
             <Input
               type="number"
               value={startColInput}
@@ -144,7 +146,7 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
             />
           </div>
           <div className="space-y-2">
-            <Label>終了列</Label>
+            <Label>{t('dataRange.endCol')}</Label>
             <Input
               type="number"
               value={endColInput}
@@ -169,21 +171,21 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
         {/* 選択範囲の情報 */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="text-sm">
-            <span className="font-semibold">選択範囲：</span>
+            <span className="font-semibold">{t('dataRange.rangeInfo')}</span>
             {` ${getColumnLabel(startCol)}${startRow + 1}:${getColumnLabel(endCol)}${endRow + 1}`}
-            {` （${endRow - startRow + 1}行 × ${endCol - startCol + 1}列）`}
+            {` ${t('dataRange.rowCol', { rows: endRow - startRow + 1, cols: endCol - startCol + 1 })}`}
           </div>
         </div>
 
         {/* プレビューテーブル */}
         <div className="space-y-2">
-          <Label>データプレビュー</Label>
+          <Label>{t('dataRange.preview')}</Label>
           <div className="overflow-auto max-h-96 border rounded-lg shadow-inner">
             <table className="w-full text-sm border-collapse">
               <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10">
                 <tr>
                   <th className="border p-2 text-xs font-medium bg-gray-200 dark:bg-gray-700">
-                    行
+                    {t('dataRange.row')}
                   </th>
                   {visibleRows[0]?.map((_, colIndex) => (
                     <th 
@@ -240,7 +242,7 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
               onClick={handleShowMore}
             >
               <ChevronDown className="h-4 w-4 mr-2" />
-              さらに表示（残り{rawRows.length - displayRows}行）
+              {t('dataRange.showMore', { count: rawRows.length - displayRows })}
             </Button>
           )}
         </div>
@@ -251,7 +253,7 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
           className="w-full glass-button text-black dark:text-white"
           size="lg"
         >
-          {mode === 'header' ? 'この範囲を列ヘッダーとして使用' : 'この範囲を使用してグラフを作成'}
+          {mode === 'header' ? t('dataRange.confirmHeader') : t('dataRange.confirmData')}
         </Button>
         
         {/* 最初に戻るボタン */}
@@ -262,7 +264,7 @@ export function DataRangeSelector({ rawRows, onRangeSelect, mode = 'data', initi
             className="w-full glass-button mt-2"
           >
             <Home className="h-4 w-4 mr-2" />
-            最初に戻る
+            {t('dataRange.backToStart')}
           </Button>
         )}
       </CardContent>

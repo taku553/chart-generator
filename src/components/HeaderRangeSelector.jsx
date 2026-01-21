@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table2, CheckCircle2, Edit3, Home } from 'lucide-react'
 import { mergeHeaderRows, extractHeadersAndDataRows } from '@/lib/dataTransform'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onReset }) {
+  const { t } = useLanguage()
   const [headerStartRow, setHeaderStartRow] = useState(0)
   const [headerEndRow, setHeaderEndRow] = useState(0)
   const [dataStartRow, setDataStartRow] = useState(1)
@@ -112,17 +114,17 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Table2 className="h-5 w-5" />
-          ヘッダー領域の選択
+          {t('headerRange.title')}
         </CardTitle>
         <CardDescription>
-          複数行にわたるヘッダーを指定できます。各列のヘッダーは自動的に結合されます。
+          {t('headerRange.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 範囲指定コントロール */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label>ヘッダー開始行</Label>
+            <Label>{t('headerRange.headerStart')}</Label>
             <Input
               type="number"
               value={headerStartRowInput}
@@ -153,7 +155,7 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
           </div>
 
           <div className="space-y-2">
-            <Label>ヘッダー終了行</Label>
+            <Label>{t('headerRange.headerEnd')}</Label>
             <Input
               type="number"
               value={headerEndRowInput}
@@ -180,7 +182,7 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
           </div>
 
           <div className="space-y-2">
-            <Label>データ開始行</Label>
+            <Label>{t('headerRange.dataStart')}</Label>
             <Input
               type="number"
               value={dataStartRowInput}
@@ -206,8 +208,8 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
         {/* 設定説明 */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <div className="text-sm space-y-1">
-            <div><span className="font-semibold">ヘッダー領域：</span>行 {headerStartRow + 1} 〜 行 {headerEndRow + 1} （{headerEndRow - headerStartRow + 1}行）</div>
-            <div><span className="font-semibold">データ領域：</span>行 {dataStartRow + 1} 以降</div>
+            <div>{t('headerRange.rangeInfo', { start: headerStartRow + 1, end: headerEndRow + 1, count: headerEndRow - headerStartRow + 1 })}</div>
+            <div>{t('headerRange.dataInfo', { start: dataStartRow + 1 })}</div>
           </div>
         </div>
 
@@ -216,31 +218,31 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Edit3 className="h-4 w-4 text-blue-600" />
-              <Label className="text-base font-semibold">ヘッダー名の編集</Label>
+              <Label className="text-base font-semibold">{t('headerRange.editHeaders')}</Label>
             </div>
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
               <p className="text-sm text-amber-800 dark:text-amber-200">
-                💡 自動認識されたヘッダー名は自由に編集できます。複数行のヘッダーが結合されている場合など、必要に応じて修正してください。
+                💡 {t('headerRange.editWarning')}
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {previewData.headers.map((header, index) => (
                 <div key={index} className="space-y-2">
                   <Label className="text-xs text-gray-600 dark:text-gray-400">
-                    列 {index + 1}
+                    {t('headerRange.column', { num: index + 1 })}
                     {previewData.originalHeaders[index] !== header && (
-                      <span className="ml-2 text-blue-600 dark:text-blue-400">(編集済)</span>
+                      <span className="ml-2 text-blue-600 dark:text-blue-400">({t('headerRange.edited')})</span>
                     )}
                   </Label>
                   <Input
                     value={header}
                     onChange={(e) => handleHeaderEdit(index, e.target.value)}
-                    placeholder={`列${index + 1}の名前`}
+                    placeholder={`${t('headerRange.column', { num: index + 1 })}${t('headerRange.columnName')}`}
                     className="glass-button"
                   />
                   {previewData.originalHeaders[index] !== header && (
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      元: {previewData.originalHeaders[index]}
+                      {t('headerRange.original')}: {previewData.originalHeaders[index]}
                     </p>
                   )}
                 </div>
@@ -251,7 +253,7 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
 
         {/* プレビューエリア */}
         <div className="space-y-2">
-          <Label>プレビュー（最初の5行）</Label>
+          <Label>{t('headerRange.previewLabel')}</Label>
           
           {previewData.headers.length > 0 ? (
             <div className="overflow-auto max-h-96 border rounded-lg shadow-inner">
@@ -292,7 +294,7 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
             </div>
           ) : (
             <div className="border rounded-lg p-8 text-center text-gray-500">
-              設定を調整してプレビューを表示してください
+              {t('headerRange.previewNote')}
             </div>
           )}
         </div>
@@ -300,12 +302,12 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
         {/* ヒント */}
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
           <div className="text-sm space-y-1">
-            <div className="font-semibold mb-2">💡 使い方のヒント</div>
+            <div className="font-semibold mb-2">💡 {t('headerRange.hintsTitle')}</div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>ヘッダーが複数行にまたがる場合、開始行と終了行を指定してください</li>
-              <li>各列のヘッダーは、指定範囲内の空でないセルが自動的に結合されます</li>
-              <li>データ開始行は、ヘッダー終了行の次の行以降を指定してください</li>
-              <li>例: 行1に「年次」、行3に「出生数」→ ヘッダー開始:0、終了:2、データ開始:3</li>
+              <li>{t('headerRange.hint1')}</li>
+              <li>{t('headerRange.hint2')}</li>
+              <li>{t('headerRange.hint3')}</li>
+              <li>{t('headerRange.hint4')}</li>
             </ul>
           </div>
         </div>
@@ -317,11 +319,10 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
               <span className="text-yellow-600 text-xl">⚠️</span>
               <div className="space-y-1">
                 <div className="font-semibold text-yellow-900 dark:text-yellow-100">
-                  空欄のヘッダーがあります
+                  {t('headerRange.emptyWarningTitle')}
                 </div>
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  空欄の列はグラフ生成時に軸の選択肢として使用できません。
-                  このまま続けてもよろしいですか？必要であれば、空欄のヘッダーに名前を入力してください。
+                  {t('headerRange.emptyWarningMessage')}
                 </p>
               </div>
             </div>
@@ -332,7 +333,7 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
         <div className="flex justify-end gap-3">
           {!isValid && (
             <div className="text-sm text-red-500 flex items-center gap-2">
-              ⚠️ 設定を確認してください
+              ⚠️ {t('headerRange.checkSettings')}
             </div>
           )}
           <Button
@@ -341,7 +342,7 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
             className="glass-button"
           >
             <CheckCircle2 className="h-4 w-4 mr-2" />
-            この設定で確定
+            {t('headerRange.confirm')}
           </Button>
         </div>
         
@@ -353,7 +354,7 @@ export function HeaderRangeSelector({ processedData, onHeaderRangeConfirm, onRes
             className="w-full glass-button"
           >
             <Home className="h-4 w-4 mr-2" />
-            最初に戻る
+            {t('headerRange.returnToStart')}
           </Button>
         )}
       </CardContent>

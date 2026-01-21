@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Switch } from '@/components/ui/switch.jsx'
 import { ArrowLeft, Ruler, Eye, ChevronDown, ChevronUp, Home } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { 
-  UNIT_PRESETS, 
-  SCALE_PRESETS, 
+  getUnitPresets,
+  getScalePresets,
   getDefaultUnitConfig, 
   formatValueWithUnit,
   getUnitFromPreset,
@@ -16,6 +17,9 @@ import {
 } from '@/lib/unitUtils.js'
 
 export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm, onBack, onReset }) {
+  const { t } = useLanguage()
+  const UNIT_PRESETS = getUnitPresets(t)
+  const SCALE_PRESETS = getScalePresets(t)
   const [xUnitConfig, setXUnitConfig] = useState(getDefaultUnitConfig('x'))
   const [yUnitConfig, setYUnitConfig] = useState(getDefaultUnitConfig('y'))
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -27,10 +31,11 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
   const handleXUnitTypeChange = (unitType) => {
     const firstOption = UNIT_PRESETS[unitType]?.options[0]
     if (firstOption) {
-      const unitInfo = getUnitFromPreset(unitType, firstOption.value)
+      const unitInfo = getUnitFromPreset(unitType, firstOption.value, t)
       setXUnitConfig(prev => ({
         ...prev,
-        ...unitInfo
+        ...unitInfo,
+        selectedValue: firstOption.value
       }))
     } else {
       setXUnitConfig(prev => ({
@@ -38,7 +43,8 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
         unitType,
         unit: '',
         suffix: '',
-        prefix: ''
+        prefix: '',
+        selectedValue: ''
       }))
     }
   }
@@ -47,10 +53,11 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
   const handleYUnitTypeChange = (unitType) => {
     const firstOption = UNIT_PRESETS[unitType]?.options[0]
     if (firstOption) {
-      const unitInfo = getUnitFromPreset(unitType, firstOption.value)
+      const unitInfo = getUnitFromPreset(unitType, firstOption.value, t)
       setYUnitConfig(prev => ({
         ...prev,
-        ...unitInfo
+        ...unitInfo,
+        selectedValue: firstOption.value
       }))
     } else {
       setYUnitConfig(prev => ({
@@ -58,26 +65,29 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
         unitType,
         unit: '',
         suffix: '',
-        prefix: ''
+        prefix: '',
+        selectedValue: ''
       }))
     }
   }
 
   // X軸の具体的な単位変更
   const handleXUnitValueChange = (unitValue) => {
-    const unitInfo = getUnitFromPreset(xUnitConfig.unitType, unitValue)
+    const unitInfo = getUnitFromPreset(xUnitConfig.unitType, unitValue, t)
     setXUnitConfig(prev => ({
       ...prev,
-      ...unitInfo
+      ...unitInfo,
+      selectedValue: unitValue
     }))
   }
 
   // Y軸の具体的な単位変更
   const handleYUnitValueChange = (unitValue) => {
-    const unitInfo = getUnitFromPreset(yUnitConfig.unitType, unitValue)
+    const unitInfo = getUnitFromPreset(yUnitConfig.unitType, unitValue, t)
     setYUnitConfig(prev => ({
       ...prev,
-      ...unitInfo
+      ...unitInfo,
+      selectedValue: unitValue
     }))
   }
 
@@ -87,7 +97,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
     setXUnitConfig(prev => ({
       ...prev,
       scale,
-      scaleLabel: getScaleLabel(scale)
+      scaleLabel: getScaleLabel(scale, t)
     }))
   }
 
@@ -97,7 +107,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
     setYUnitConfig(prev => ({
       ...prev,
       scale,
-      scaleLabel: getScaleLabel(scale)
+      scaleLabel: getScaleLabel(scale, t)
     }))
   }
 
@@ -140,7 +150,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
           onClick={onBack}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          前に戻る
+          {t('unit.back')}
         </Button>
         
         {onReset && (
@@ -150,7 +160,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
             onClick={onReset}
           >
             <Home className="h-4 w-4 mr-2" />
-            最初に戻る
+            {t('unit.returnToStart')}
           </Button>
         )}
       </div>
@@ -159,27 +169,27 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Ruler className="h-5 w-5" />
-            単位とスケールの設定
+            {t('unit.title')}
           </CardTitle>
           <CardDescription>
-            グラフの各軸に表示する単位と、データの基準値（スケール）を設定してください
+            {t('unit.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* X軸の設定 */}
           <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/50">
-            <h3 className="font-semibold text-lg">横軸（X軸）: {xColumn}</h3>
+            <h3 className="font-semibold text-lg">{t('unit.xAxis')}: {xColumn}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* 単位タイプ選択 */}
               <div className="space-y-2">
-                <Label>単位の種類</Label>
+                <Label>{t('unit.unitType')}</Label>
                 <Select 
                   value={xUnitConfig.unitType} 
                   onValueChange={handleXUnitTypeChange}
                 >
                   <SelectTrigger className="glass-button">
-                    <SelectValue placeholder="単位の種類を選択" />
+                    <SelectValue placeholder={t('unit.selectUnitType')} />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(UNIT_PRESETS).map(([key, preset]) => (
@@ -194,15 +204,13 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
               {/* 具体的な単位選択 */}
               {xUnitConfig.unitType && xUnitConfig.unitType !== 'none' && (
                 <div className="space-y-2">
-                  <Label>単位</Label>
+                  <Label>{t('unit.unit')}</Label>
                   <Select 
-                    value={UNIT_PRESETS[xUnitConfig.unitType]?.options.find(
-                      opt => opt.label === xUnitConfig.unit
-                    )?.value || ''}
+                    value={xUnitConfig.selectedValue || ''}
                     onValueChange={handleXUnitValueChange}
                   >
                     <SelectTrigger className="glass-button">
-                      <SelectValue placeholder="単位を選択" />
+                      <SelectValue placeholder={t('unit.selectUnit')} />
                     </SelectTrigger>
                     <SelectContent>
                       {UNIT_PRESETS[xUnitConfig.unitType]?.options.map((option) => (
@@ -217,13 +225,13 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
 
               {/* スケール選択 */}
               <div className="space-y-2">
-                <Label>基準値（スケール）</Label>
+                <Label>{t('unit.scale')}</Label>
                 <Select 
                   value={String(xUnitConfig.scale)} 
                   onValueChange={handleXScaleChange}
                 >
                   <SelectTrigger className="glass-button">
-                    <SelectValue placeholder="スケールを選択" />
+                    <SelectValue placeholder={t('unit.selectScale')} />
                   </SelectTrigger>
                   <SelectContent>
                     {SCALE_PRESETS.map((preset) => (
@@ -241,14 +249,14 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Eye className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">プレビュー</span>
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('unit.preview')}</span>
                 </div>
                 <div className="text-sm text-blue-800 dark:text-blue-200">
-                  データ値: {xSampleValue.toLocaleString()}
+                  {t('unit.dataValue')}: {xSampleValue.toLocaleString()}
                   {xUnitConfig.scale > 1 && (
                     <> (× {xUnitConfig.scaleLabel || xUnitConfig.scale.toLocaleString()})</>
                   )}
-                  {' '}→ 表示: <strong>{formatValueWithUnit(xSampleValue, xUnitConfig, true)}</strong>
+                  {' '}→ {t('unit.display')}: <strong>{formatValueWithUnit(xSampleValue, xUnitConfig, true, t)}</strong>
                 </div>
               </div>
             )}
@@ -256,18 +264,18 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
 
           {/* Y軸の設定 */}
           <div className="space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/50">
-            <h3 className="font-semibold text-lg">縦軸（Y軸）: {yColumn}</h3>
+            <h3 className="font-semibold text-lg">{t('unit.yAxis')}: {yColumn}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* 単位タイプ選択 */}
               <div className="space-y-2">
-                <Label>単位の種類</Label>
+                <Label>{t('unit.unitType')}</Label>
                 <Select 
                   value={yUnitConfig.unitType} 
                   onValueChange={handleYUnitTypeChange}
                 >
                   <SelectTrigger className="glass-button">
-                    <SelectValue placeholder="単位の種類を選択" />
+                    <SelectValue placeholder={t('unit.selectUnitType')} />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(UNIT_PRESETS).map(([key, preset]) => (
@@ -282,15 +290,13 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
               {/* 具体的な単位選択 */}
               {yUnitConfig.unitType && yUnitConfig.unitType !== 'none' && (
                 <div className="space-y-2">
-                  <Label>単位</Label>
+                  <Label>{t('unit.unit')}</Label>
                   <Select 
-                    value={UNIT_PRESETS[yUnitConfig.unitType]?.options.find(
-                      opt => opt.label === yUnitConfig.unit
-                    )?.value || ''}
+                    value={yUnitConfig.selectedValue || ''}
                     onValueChange={handleYUnitValueChange}
                   >
                     <SelectTrigger className="glass-button">
-                      <SelectValue placeholder="単位を選択" />
+                      <SelectValue placeholder={t('unit.selectUnit')} />
                     </SelectTrigger>
                     <SelectContent>
                       {UNIT_PRESETS[yUnitConfig.unitType]?.options.map((option) => (
@@ -305,13 +311,13 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
 
               {/* スケール選択 */}
               <div className="space-y-2">
-                <Label>基準値（スケール）</Label>
+                <Label>{t('unit.scale')}</Label>
                 <Select 
                   value={String(yUnitConfig.scale)} 
                   onValueChange={handleYScaleChange}
                 >
                   <SelectTrigger className="glass-button">
-                    <SelectValue placeholder="スケールを選択" />
+                    <SelectValue placeholder={t('unit.selectScale')} />
                   </SelectTrigger>
                   <SelectContent>
                     {SCALE_PRESETS.map((preset) => (
@@ -329,14 +335,14 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Eye className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">プレビュー</span>
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">{t('unit.preview')}</span>
                 </div>
                 <div className="text-sm text-blue-800 dark:text-blue-200">
-                  データ値: {ySampleValue.toLocaleString()}
+                  {t('unit.dataValue')}: {ySampleValue.toLocaleString()}
                   {yUnitConfig.scale > 1 && (
                     <> (× {yUnitConfig.scaleLabel || yUnitConfig.scale.toLocaleString()})</>
                   )}
-                  {' '}→ 表示: <strong>{formatValueWithUnit(ySampleValue, yUnitConfig, true)}</strong>
+                  {' '}→ {t('unit.display')}: <strong>{formatValueWithUnit(ySampleValue, yUnitConfig, true, t)}</strong>
                 </div>
               </div>
             )}
@@ -349,7 +355,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
               className="w-full justify-between"
               onClick={() => setShowAdvanced(!showAdvanced)}
             >
-              <span>詳細設定</span>
+              <span>{t('unit.showAdvanced')}</span>
               {showAdvanced ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
@@ -362,7 +368,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Y軸の小数点以下桁数 */}
                   <div className="space-y-2">
-                    <Label>Y軸 小数点以下の桁数</Label>
+                    <Label>{t('unit.decimalPlaces')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -379,7 +385,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
                   {/* Y軸の千の位区切り */}
                   <div className="space-y-2">
                     <Label className="flex items-center justify-between">
-                      <span>Y軸 千の位区切り</span>
+                      <span>{t('unit.useComma')}</span>
                       <Switch
                         checked={yUnitConfig.useThousandSeparator}
                         onCheckedChange={(checked) => setYUnitConfig(prev => ({
@@ -397,12 +403,10 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
           {/* 説明文 */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
-              スケール設定について
+              {t('unit.scaleInfo')}
             </h4>
             <p className="text-amber-800 dark:text-amber-200 text-sm">
-              例: データが「1,980」と表記されていて、基準値を「百万」に設定した場合、
-              実際の値は 1,980 × 1,000,000 = 1,980,000,000（19億8千万）として扱われます。
-              グラフ上では元の値（1,980）がそのまま表示され、軸ラベルに「(百万円)」などの単位が追加されます。
+              {t('unit.scaleExample')}
             </p>
           </div>
 
@@ -411,7 +415,7 @@ export function UnitSettings({ xColumn, yColumn, sampleData, headers, onConfirm,
             className="w-full glass-button bg-black text-white hover:bg-gray-800" 
             onClick={handleConfirmClick}
           >
-            次へ：グラフタイトルを設定
+            {t('unit.next')}
           </Button>
         </CardContent>
       </Card>

@@ -67,7 +67,7 @@ export function AuthModal({ open, onOpenChange }) {
     // パスワード強度チェック
     const { isValid, errors } = validatePassword(signupPassword)
     if (!isValid) {
-      setLocalError(t('auth.error.passwordInvalid').replace('{errors}', errors.join(', ')))
+      setLocalError(t('auth.error.passwordInvalid', { errors: errors.join(', ') }))
       setLoading(false)
       return
     }

@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ArrowDown, RotateCw, Home } from 'lucide-react'
 import { transposeData } from '@/lib/dataTransform'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function DataOrientationSelector({ selectedData, onOrientationSelect, onReset }) {
+  const { t } = useLanguage()
   const [showTransposed, setShowTransposed] = useState(false)
   
   // 転置データ
@@ -21,11 +23,10 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect, onR
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <RotateCw className="h-5 w-5" />
-          データの向きを確認
+          {t('orientation.title')}
         </CardTitle>
         <CardDescription>
-          カテゴリ（項目名）が横方向と縦方向のどちらに並んでいるか確認してください。
-          必要に応じてデータを転置（行列を入れ替え）できます。
+          {t('orientation.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -37,7 +38,7 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect, onR
             onClick={() => setShowTransposed(false)}
           >
             <ArrowDown className="h-4 w-4 mr-2" />
-            元の向き
+            {t('orientation.original')}
           </Button>
           <Button
             variant={showTransposed ? "default" : "outline"}
@@ -45,14 +46,14 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect, onR
             onClick={() => setShowTransposed(true)}
           >
             <ArrowRight className="h-4 w-4 mr-2" />
-            転置後
+            {t('orientation.transposed')}
           </Button>
         </div>
 
         {/* データプレビュー */}
         <div className="space-y-2">
           <div className="text-sm font-medium">
-            {showTransposed ? '転置後のプレビュー' : '元データのプレビュー'}
+            {showTransposed ? t('orientation.previewTransposed') : t('orientation.previewOriginal')}
           </div>
           <div className="overflow-auto border rounded-lg shadow-inner bg-white dark:bg-gray-950 p-2">
             <table className="w-full text-sm border-collapse">
@@ -78,20 +79,16 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect, onR
             </table>
           </div>
           <p className="text-xs text-muted-foreground">
-            ※ 最初の5行のみ表示しています
+            {t('orientation.previewNotice')}
           </p>
         </div>
 
         {/* ヘルプメッセージ */}
         <div className="bg-gray-50 dark:bg-gray-900 border rounded-lg p-4 space-y-2">
-          <h4 className="text-sm font-semibold">💡 選び方のヒント</h4>
+          <h4 className="text-sm font-semibold">{t('orientation.selectionHintsTitle')}</h4>
           <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-            <li>
-              <strong>元の向き：</strong>1行目が項目名（年度、月など）、2行目以降がデータの場合
-            </li>
-            <li>
-              <strong>転置後：</strong>1列目が項目名、2列目以降がデータの場合
-            </li>
+            <li>{t('orientation.hintOriginal')}</li>
+            <li>{t('orientation.hintTransposed')}</li>
           </ul>
         </div>
 
@@ -104,9 +101,9 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect, onR
           >
             <ArrowDown className="h-8 w-8" />
             <div className="text-center">
-              <div className="font-semibold">元の向きで使用</div>
+              <div className="font-semibold">{t('orientation.confirmOriginal')}</div>
               <div className="text-xs text-muted-foreground mt-1">
-                カテゴリ：横方向
+                {t('orientation.infoOriginal')}
               </div>
             </div>
           </Button>
@@ -118,9 +115,9 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect, onR
           >
             <ArrowRight className="h-8 w-8" />
             <div className="text-center">
-              <div className="font-semibold">転置して使用</div>
+              <div className="font-semibold">{t('orientation.confirmTransposed')}</div>
               <div className="text-xs text-muted-foreground mt-1">
-                カテゴリ：縦方向
+                {t('orientation.infoTransposed')}
               </div>
             </div>
           </Button>
@@ -134,7 +131,7 @@ export function DataOrientationSelector({ selectedData, onOrientationSelect, onR
             className="w-full glass-button"
           >
             <Home className="h-4 w-4 mr-2" />
-            最初に戻る
+            {t('dataRange.backToStart')}
           </Button>
         )}
       </CardContent>

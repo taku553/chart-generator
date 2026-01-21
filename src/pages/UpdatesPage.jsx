@@ -1,11 +1,14 @@
 import { updates } from '@/data/updates.js'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function UpdatesPage() {
+  const { t } = useLanguage()
+  
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl sm:text-4xl font-bold text-center mb-12 gradient-text">
-          更新情報
+          {t('updates.title')}
         </h1>
         
         <div className="relative">
@@ -35,11 +38,11 @@ export function UpdatesPage() {
                     </span>
                   </div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    {update.title}
+                    {t(`updates.${update.id}.title`)}
                   </h2>
                   {update.description && (
                     <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                      {update.description}
+                      {t(`updates.${update.id}.description`)}
                     </p>
                   )}
                 </div>

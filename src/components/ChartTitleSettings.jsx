@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Type, CheckCircle2, ArrowLeft, Home, Info } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function ChartTitleSettings({ 
   defaultTitle, 
@@ -11,6 +12,7 @@ export function ChartTitleSettings({
   onBack, 
   onReset 
 }) {
+  const { t } = useLanguage()
   const [chartTitle, setChartTitle] = useState(defaultTitle || '')
 
   const handleConfirm = () => {
@@ -23,10 +25,10 @@ export function ChartTitleSettings({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Type className="h-5 w-5" />
-          グラフタイトルの設定
+          {t('chartTitle.title')}
         </CardTitle>
         <CardDescription>
-          グラフ全体を表す名前を設定してください。この名前はグラフの凡例に表示されます。
+          {t('chartTitle.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -35,11 +37,11 @@ export function ChartTitleSettings({
           <div className="flex items-start gap-2">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm space-y-2">
-              <div className="font-semibold text-blue-900 dark:text-blue-100">グラフタイトルについて</div>
+              <div className="font-semibold text-blue-900 dark:text-blue-100">{t('chartTitle.aboutTitle')}</div>
               <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
-                <li>棒グラフ・折れ線グラフ: 上部の凡例に表示されます</li>
-                <li>円グラフ: 右側の凡例タイトルとして表示されます</li>
-                <li>空欄の場合はデフォルト（縦軸のヘッダー名）が使用されます</li>
+                <li>{t('chartTitle.barLine')}</li>
+                <li>{t('chartTitle.pie')}</li>
+                <li>{t('chartTitle.emptyDefault')}</li>
               </ul>
             </div>
           </div>
@@ -47,24 +49,24 @@ export function ChartTitleSettings({
 
         {/* タイトル入力 */}
         <div className="space-y-2">
-          <Label htmlFor="chart-title">グラフタイトル</Label>
+          <Label htmlFor="chart-title">{t('chartTitle.label')}</Label>
           <Input
             id="chart-title"
             type="text"
             value={chartTitle}
             onChange={(e) => setChartTitle(e.target.value)}
-            placeholder={`例: ${defaultTitle}`}
+            placeholder={t('chartTitle.placeholder', { default: defaultTitle })}
             className="glass-button text-lg"
           />
           <p className="text-xs text-gray-500">
-            デフォルト: {defaultTitle}
+            {t('chartTitle.default', { default: defaultTitle })}
           </p>
         </div>
 
         {/* プレビュー */}
         <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
           <div className="text-sm space-y-1">
-            <div className="font-semibold mb-2">表示プレビュー</div>
+            <div className="font-semibold mb-2">{t('chartTitle.previewTitle')}</div>
             <div className="bg-white dark:bg-gray-800 rounded p-3 border border-purple-300 dark:border-purple-700">
               <div className="text-center font-medium text-gray-700 dark:text-gray-200">
                 {chartTitle.trim() || defaultTitle}
@@ -76,11 +78,11 @@ export function ChartTitleSettings({
         {/* ヒント */}
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
           <div className="text-sm space-y-1">
-            <div className="font-semibold mb-2">💡 使い方のヒント</div>
+            <div className="font-semibold mb-2">💡 {t('chartTitle.tipsTitle')}</div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>グラフ全体の内容を表す簡潔な名前を付けると分かりやすくなります</li>
-              <li>例: 「年間売上推移」「地域別人口」「月別気温」など</li>
-              <li>空欄のまま進むと、縦軸に設定したヘッダー名が自動的に使用されます</li>
+              <li>{t('chartTitle.tip1')}</li>
+              <li>{t('chartTitle.tip2')}</li>
+              <li>{t('chartTitle.tip3')}</li>
             </ul>
           </div>
         </div>
@@ -93,7 +95,7 @@ export function ChartTitleSettings({
             className="glass-button"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            前に戻る
+            {t('chartTitle.back')}
           </Button>
           
           <Button
@@ -101,7 +103,7 @@ export function ChartTitleSettings({
             className="glass-button"
           >
             <CheckCircle2 className="h-4 w-4 mr-2" />
-            この設定でグラフを生成
+            {t('chartTitle.confirm')}
           </Button>
         </div>
         
@@ -113,7 +115,7 @@ export function ChartTitleSettings({
             className="w-full glass-button"
           >
             <Home className="h-4 w-4 mr-2" />
-            最初に戻る
+            {t('chartTitle.returnToStart')}
           </Button>
         )}
       </CardContent>

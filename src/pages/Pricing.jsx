@@ -66,7 +66,7 @@ export function Pricing() {
       cta: t('pricing.upgrade'),
       popular: true,
       buttonVariant: 'default',
-      savingsText: t('pricing.popularChoice').replace('{percent}', '75'),
+      savingsText: t('pricing.popularChoice', { percent: '75' }),
     },
     {
       id: 'pro',
@@ -162,7 +162,7 @@ export function Pricing() {
           unsubscribe()
           setLoading(false)
           setLoadingPlanId(null)
-          alert(t('pricing.error.checkoutFailed').replace('{message}', error.message))
+          alert(t('pricing.error.checkoutFailed', { message: error.message }))
         }
 
         if (url) {
@@ -286,7 +286,7 @@ export function Pricing() {
                   {billingPeriod === 'yearly' && plan.price > 0 && (
                     <div className="mt-2">
                       <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
-                        {t('pricing.yearlyTotal').replace('{price}', displayPrice.toLocaleString()).replace('{savings}', savings)}
+                        {t('pricing.yearlyTotal', { price: displayPrice.toLocaleString(), savings: savings })}
                       </p>
                     </div>
                   )}
@@ -297,7 +297,7 @@ export function Pricing() {
                   )}
                   {plan.id !== 'free' && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {t('pricing.perDay').replace('{price}', Math.round(monthlyEquivalent / 30))}
+                      {t('pricing.perDay', { price: Math.round(monthlyEquivalent / 30) })}
                     </p>
                   )}
                 </div>

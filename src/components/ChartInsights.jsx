@@ -290,7 +290,7 @@ export function ChartInsights({ chartData, isVisible = true }) {
             {isUnlimited ? (
               <li>{t('insights.noteUnlimited')}</li>
             ) : (
-              <li>{t('insights.noteDailyLimit').replace('{limit}', dailyLimit || '制限')}</li>
+              <li>{t('insights.noteDailyLimit', { limit: dailyLimit || '制限' })}</li>
             )}
             <li>{t('insights.noteReset')}</li>
             <li>{t('insights.noteAccuracy')}</li>

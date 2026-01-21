@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { useSearchParams } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +13,7 @@ import { DeleteAccountModal } from '@/components/DeleteAccountModal'
 
 export function MyPage() {
   const { user } = useAuth()
+  const { t, language } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -46,9 +48,9 @@ export function MyPage() {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return '不明'
+    if (!dateString) return t('mypage.profile.unknown')
     const date = new Date(dateString)
-    return date.toLocaleDateString('ja-JP', {
+    return date.toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -62,10 +64,10 @@ export function MyPage() {
           {/* ページタイトル */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              マイページ
+              {t('mypage.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-300 mt-2">
-              アカウント情報とプラン詳細
+              {t('mypage.subtitle')}
             </p>
           </div>
 
@@ -74,10 +76,10 @@ export function MyPage() {
             <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
               <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               <AlertTitle className="text-green-900 dark:text-green-100 font-semibold">
-                🎉 決済が完了しました！
+                {t('mypage.paymentSuccess.title')}
               </AlertTitle>
               <AlertDescription className="text-green-800 dark:text-green-200">
-                有料プランへのアップグレードが完了しました。すべての機能がご利用いただけます。
+                {t('mypage.paymentSuccess.description')}
               </AlertDescription>
             </Alert>
           )}
@@ -85,8 +87,8 @@ export function MyPage() {
           {/* プロフィールカード */}
           <Card>
             <CardHeader>
-              <CardTitle>プロフィール</CardTitle>
-              <CardDescription>基本的なアカウント情報</CardDescription>
+              <CardTitle>{t('mypage.profile.title')}</CardTitle>
+              <CardDescription>{t('mypage.profile.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-start gap-6">
@@ -98,10 +100,10 @@ export function MyPage() {
                 <div className="flex-1 space-y-4">
                   <div>
                     <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      ユーザー名
+                      {t('mypage.profile.username')}
                     </label>
                     <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {user?.displayName || '未設定'}
+                      {user?.displayName || t('mypage.profile.notSet')}
                     </p>
                   </div>
 
@@ -109,7 +111,7 @@ export function MyPage() {
                     <Mail className="h-4 w-4 text-gray-400" />
                     <div>
                       <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        メールアドレス
+                        {t('mypage.profile.email')}
                       </label>
                       <p className="text-gray-900 dark:text-gray-100">
                         {user?.email}
@@ -121,7 +123,7 @@ export function MyPage() {
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <div>
                       <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        登録日
+                        {t('mypage.profile.registeredDate')}
                       </label>
                       <p className="text-gray-900 dark:text-gray-100">
                         {formatDate(user?.createdAt)}
@@ -138,44 +140,41 @@ export function MyPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Crown className="h-5 w-5" />
-                現在のプラン
+                {t('mypage.plan.title')}
               </CardTitle>
-              <CardDescription>ご利用中のプラン情報</CardDescription>
+              <CardDescription>{t('mypage.plan.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      プラン
+                      {t('mypage.plan.label')}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant={user?.plan !== 'free' ? 'default' : 'secondary'} className="text-base">
-                        {user?.plan === 'free' ? '無料プラン' : 
-                         user?.plan === 'standard' ? 'Standard プラン' :
-                         user?.plan === 'pro' ? 'Pro プラン' : '有料プラン'}
+                        {user?.plan === 'free' ? t('mypage.plan.free') : 
+                         user?.plan === 'standard' ? t('mypage.plan.standard') :
+                         user?.plan === 'pro' ? t('mypage.plan.pro') : t('mypage.plan.premium')}
                       </Badge>
                     </div>
                   </div>
                   
                   {user?.plan === 'free' && (
                     <Button variant="default">
-                      有料プランにアップグレード
+                      {t('mypage.plan.upgrade')}
                     </Button>
                   )}
                 </div>
 
                 {user?.plan === 'free' && (
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm text-blue-900 dark:text-blue-100">
-                      <strong>無料プラン</strong>では基本機能をご利用いただけます。
-                      有料プランにアップグレードすると、以下の機能が利用可能になります:
-                    </p>
+                    <p className="text-sm text-blue-900 dark:text-blue-100" dangerouslySetInnerHTML={{ __html: t('mypage.plan.freeInfo') }} />
                     <ul className="mt-2 space-y-1 text-sm text-blue-800 dark:text-blue-200">
-                      <li>• グラフの高解像度エクスポート</li>
-                      <li>• カスタムテーマの作成</li>
-                      <li>• データ保存数の上限解除</li>
-                      <li>• 優先サポート</li>
+                      <li>• {t('mypage.plan.feature1')}</li>
+                      <li>• {t('mypage.plan.feature2')}</li>
+                      <li>• {t('mypage.plan.feature3')}</li>
+                      <li>• {t('mypage.plan.feature4')}</li>
                     </ul>
                   </div>
                 )}
@@ -188,14 +187,14 @@ export function MyPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
-                アカウント設定
+                {t('mypage.settings.title')}
               </CardTitle>
-              <CardDescription>アカウントの管理</CardDescription>
+              <CardDescription>{t('mypage.settings.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" disabled>
-                  プロフィールを編集
+                  {t('mypage.settings.editProfile')}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -203,11 +202,11 @@ export function MyPage() {
                   onClick={() => setShowPasswordModal(true)}
                   disabled={user?.providerData?.some(p => p.providerId === 'google.com')}
                 >
-                  パスワードを変更
+                  {t('mypage.settings.changePassword')}
                 </Button>
                 {user?.providerData?.some(p => p.providerId === 'google.com') && (
                   <p className="text-xs text-gray-500 mt-1 ml-1">
-                    Googleログインユーザーはパスワード変更できません
+                    {t('mypage.settings.googleUserNote')}
                   </p>
                 )}
                 <Button 
@@ -215,7 +214,7 @@ export function MyPage() {
                   className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950" 
                   onClick={() => setShowDeleteModal(true)}
                 >
-                  アカウントを削除
+                  {t('mypage.settings.deleteAccount')}
                 </Button>
               </div>
             </CardContent>

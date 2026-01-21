@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
 import { ArrowLeft, FileSpreadsheet, CheckCircle2 } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function SheetSelector({ sheetNames, onSheetSelect, onBack }) {
+  const { t } = useLanguage()
   const [selectedSheet, setSelectedSheet] = useState(sheetNames[0])
 
   const handleConfirm = () => {
@@ -21,7 +23,7 @@ export function SheetSelector({ sheetNames, onSheetSelect, onBack }) {
           onClick={onBack}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          前に戻る
+          {t('sheet.back')}
         </Button>
       </div>
 
@@ -29,16 +31,16 @@ export function SheetSelector({ sheetNames, onSheetSelect, onBack }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5" />
-            シートの選択
+            {t('sheet.title')}
           </CardTitle>
           <CardDescription>
-            このファイルには複数のシートが含まれています。グラフ化したいデータが含まれているシートを選択してください。
+            {t('sheet.description')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* シート一覧 */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">利用可能なシート（{sheetNames.length}個）</label>
+            <label className="text-sm font-medium">{t('sheet.available', { count: sheetNames.length })}</label>
             <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
               {sheetNames.map((sheetName, index) => (
                 <button
@@ -72,7 +74,7 @@ export function SheetSelector({ sheetNames, onSheetSelect, onBack }) {
                           {sheetName}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          シート {index + 1}
+                          {t('sheet.number', { num: index + 1 })}
                         </p>
                       </div>
                     </div>
@@ -89,7 +91,7 @@ export function SheetSelector({ sheetNames, onSheetSelect, onBack }) {
           {selectedSheet && (
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <span className="font-semibold">選択中:</span> {selectedSheet}
+                <span className="font-semibold">{t('sheet.selected')}</span> {selectedSheet}
               </p>
             </div>
           )}
@@ -100,7 +102,7 @@ export function SheetSelector({ sheetNames, onSheetSelect, onBack }) {
             onClick={handleConfirm}
             disabled={!selectedSheet}
           >
-            このシートを使用してグラフを作成
+            {t('sheet.confirm')}
           </Button>
 
           {/* ヒント */}

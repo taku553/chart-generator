@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tag, CheckCircle2, Home, Info } from 'lucide-react'
 import { mergeDataLabelColumns } from '@/lib/dataTransform'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onSkip, onReset }) {
+  const { t } = useLanguage()
   const [labelStartCol, setLabelStartCol] = useState(0)
   const [labelEndCol, setLabelEndCol] = useState(0)
-  const [columnName, setColumnName] = useState('データ名') // 結合後の列名
+  const [columnName, setColumnName] = useState('') // 結合後の列名（初期値は空、表示時にplaceholderを使う）
   const [editedLabels, setEditedLabels] = useState({}) // 手動編集されたラベル
   
   // 表示用の文字列state（空欄を許容するため）
@@ -127,10 +129,13 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
       editedLabels[index] !== undefined ? editedLabels[index] : label
     )
     
+    // 空の場合は言語に応じたデフォルト名を使用
+    const defaultColumnName = t('dataLabel.headerPlaceholder').replace('例：', '').replace('e.g., ', '').trim() || 'Label'
+    
     onLabelRangeConfirm({
       labels: finalLabels,
       labelRange: { labelStartCol, labelEndCol },
-      columnName: columnName.trim() || 'データ名' // 空の場合はデフォルト
+      columnName: columnName.trim() || defaultColumnName
     })
   }
 
@@ -145,20 +150,19 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
       labelStartCol >= 0 &&
       labelEndCol >= labelStartCol &&
       labelEndCol < numColumns &&
-      previewData.length > 0 &&
-      columnName.trim() !== '' // 列名が空でないこと
+      previewData.length > 0
     )
-  }, [labelStartCol, labelEndCol, numColumns, previewData, columnName])
+  }, [labelStartCol, labelEndCol, numColumns, previewData])
 
   return (
     <Card className="glass-card fade-in">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Tag className="h-5 w-5" />
-          データ名（ラベル）列の選択
+          {t('dataLabel.title')}
         </CardTitle>
         <CardDescription>
-          複数列にまたがるデータ名を結合します。データ名が1列のみの場合はスキップしてください。
+          {t('dataLabel.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -167,12 +171,12 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
           <div className="flex items-start gap-2">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm space-y-2">
-              <div className="font-semibold text-blue-900 dark:text-blue-100">このステップについて</div>
+              <div className="font-semibold text-blue-900 dark:text-blue-100">{t('dataLabel.guide')}</div>
               <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
-                <li>データの各行に付けられる名前（ラベル）が複数列に分かれている場合に使用します</li>
-                <li>例: C列に「個人」「2000万円未満」、D列に「その他法人」「合計」など</li>
-                <li>指定された列範囲内の空でないセルが自動的に結合されます</li>
-                <li>データ名が1列のみの場合は「スキップ」してください</li>
+                <li>{t('dataLabel.guideText')}</li>
+                <li>{t('dataLabel.example')}</li>
+                <li>{t('dataLabel.autoMerge')}</li>
+                <li>{t('dataLabel.skipNote')}</li>
               </ul>
             </div>
           </div>
@@ -181,7 +185,7 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
         {/* 範囲指定コントロール */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label>データ名開始列</Label>
+            <Label>{t('dataLabel.labelStart')}</Label>
             <Input
               type="number"
               value={labelStartColInput}
@@ -205,11 +209,11 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
               min={1}
               max={numColumns}
             />
-            <p className="text-xs text-gray-500">列番号: 1〜{numColumns}</p>
+            <p className="text-xs text-gray-500">{t('dataLabel.columnRange')}: 1〜{numColumns}</p>
           </div>
 
           <div className="space-y-2">
-            <Label>データ名終了列</Label>
+            <Label>{t('dataLabel.labelEnd')}</Label>
             <Input
               type="number"
               value={labelEndColInput}
@@ -229,35 +233,34 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
               min={labelStartCol + 1}
               max={numColumns}
             />
-            <p className="text-xs text-gray-500">列番号: {labelStartCol + 1}〜{numColumns}</p>
+            <p className="text-xs text-gray-500">{t('dataLabel.columnRange')}: {labelStartCol + 1}〜{numColumns}</p>
           </div>
 
           <div className="space-y-2">
-            <Label>結合後のヘッダー名</Label>
+            <Label>{t('dataLabel.headerName')}</Label>
             <Input
               type="text"
               value={columnName}
               onChange={(e) => setColumnName(e.target.value)}
-              placeholder="例: データ名, 企業規模"
+              placeholder={t('dataLabel.headerPlaceholder')}
               className="glass-button"
             />
-            <p className="text-xs text-gray-500">軸選択時に表示される名前</p>
+            <p className="text-xs text-gray-500">{t('dataLabel.headerNote')}</p>
           </div>
         </div>
 
         {/* 設定説明 */}
         <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
           <div className="text-sm space-y-1">
-            <div><span className="font-semibold">データ名列範囲：</span>列 {labelStartCol + 1} 〜 列 {labelEndCol + 1} （{labelEndCol - labelStartCol + 1}列）</div>
-            <div><span className="font-semibold">データ行数：</span>{allLabels.length}行</div>
+            <div>{t('dataLabel.rangeInfo', { start: labelStartCol + 1, end: labelEndCol + 1, count: labelEndCol - labelStartCol + 1 })}</div>
+            <div>{t('dataLabel.rowCount', { count: allLabels.length })}</div>
             {Object.keys(editedLabels).length > 0 && (
               <div className="text-blue-700 dark:text-blue-300">
-                <span className="font-semibold">✏️ 手動編集：</span>
-                {Object.keys(editedLabels).length}行を編集済み
+                ✏️ {t('dataLabel.manualEdit')}{Object.keys(editedLabels).length}{t('dataLabel.rowsEdited')}
               </div>
             )}
             <div className="text-xs text-purple-700 dark:text-purple-300 mt-2">
-              選択した列範囲内の空でない値が自動的に結合されます
+              {t('dataLabel.autoMergeNote')}
             </div>
           </div>
         </div>
@@ -265,10 +268,10 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
         {/* プレビューエリア */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>結合後のデータ名プレビュー（全{previewData.length}行、空行は除外）</Label>
+            <Label>{t('dataLabel.previewTitle', { count: previewData.length })}</Label>
             {previewData.length > 20 && (
               <span className="text-xs text-gray-500">
-                スクロールして全行を編集できます
+                {t('dataLabel.scrollToEdit')}
               </span>
             )}
           </div>
@@ -282,10 +285,10 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
                       #
                     </th>
                     <th className="border border-purple-300 p-2 text-xs font-semibold text-left">
-                      データ名（編集可能）
+                      {t('dataLabel.editLabel')}
                     </th>
                     <th className="border border-purple-300 p-2 text-xs font-semibold text-left">
-                      元データ（列{labelStartCol + 1}〜{labelEndCol + 1}）
+                      {t('dataLabel.originalData')} ({t('dataLabel.column')}{labelStartCol + 1}〜{labelEndCol + 1})
                     </th>
                   </tr>
                 </thead>
@@ -310,11 +313,11 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
                                 ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
                                 : 'border-transparent'
                             }`}
-                            placeholder="データ名を入力"
+                            placeholder={t('dataLabel.placeholder')}
                           />
                           {isEdited && (
                             <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                              ✏️ 編集済み（元: {item.label}）
+                              ✏️ {t('dataLabel.edited')} ({t('dataLabel.original')}: {item.label})
                             </p>
                           )}
                         </td>
@@ -337,14 +340,14 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
         {/* ヒント */}
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
           <div className="text-sm space-y-1">
-            <div className="font-semibold mb-2">💡 使い方のヒント</div>
+            <div className="font-semibold mb-2">💡 {t('dataLabel.hintsTitle')}</div>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>データ名が複数列に分散している場合、開始列と終了列を指定してください</li>
-              <li>例: C列とD列にデータ名がある → 開始列:3、終了列:4</li>
-              <li>各行で、指定範囲内の空でないセルが自動的に結合されます</li>
-              <li>結合は半角スペースで連結されます（例: "個人" + "2000万円未満" → "個人 2000万円未満"）</li>
-              <li><strong>✏️ プレビュー表のデータ名は直接編集できます</strong>（自動結合された名前を手動で調整可能）</li>
-              <li>データ名が1列のみの場合は「スキップ」を押してください</li>
+              <li>{t('dataLabel.hint1')}</li>
+              <li>{t('dataLabel.hint2')}</li>
+              <li>{t('dataLabel.hint3')}</li>
+              <li>{t('dataLabel.hint4')}</li>
+              <li><strong>✏️ {t('dataLabel.hint5')}</strong></li>
+              <li>{t('dataLabel.hint6')}</li>
             </ul>
           </div>
         </div>
@@ -356,13 +359,13 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
             onClick={handleSkip}
             className="glass-button"
           >
-            スキップ（データ名は1列のみ）
+            {t('dataLabel.skip')}
           </Button>
           
           <div className="flex items-center gap-3">
             {!isValid && (
               <div className="text-sm text-red-500 flex items-center gap-2">
-                ⚠️ 設定を確認してください
+                ⚠️ {t('dataLabel.checkSettings')}
               </div>
             )}
             <Button
@@ -371,7 +374,7 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
               className="glass-button"
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
-              この設定で確定
+              {t('dataLabel.confirm')}
             </Button>
           </div>
         </div>
@@ -384,7 +387,7 @@ export function DataLabelRangeSelector({ processedData, onLabelRangeConfirm, onS
             className="w-full glass-button"
           >
             <Home className="h-4 w-4 mr-2" />
-            最初に戻る
+            {t('dataLabel.returnToStart')}
           </Button>
         )}
       </CardContent>
