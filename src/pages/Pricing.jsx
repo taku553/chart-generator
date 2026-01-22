@@ -48,8 +48,8 @@ export function Pricing() {
       price: 980,
       yearlyPrice: 9800, // 2ヶ月分お得
       priceId: {
-        monthly: 'price_1SfP14CY4jOV83AypPkVT1Rg',
-        yearly: 'price_1SfPGBCY4jOV83AyafyHSftj',
+        monthly: import.meta.env.VITE_STRIPE_PRICE_STANDARD_MONTHLY || 'price_1SfP14CY4jOV83AypPkVT1Rg',
+        yearly: import.meta.env.VITE_STRIPE_PRICE_STANDARD_YEARLY || 'price_1SfPGBCY4jOV83AyafyHSftj',
       },
       description: t('pricing.descStandard'),
       icon: Zap,
@@ -74,8 +74,8 @@ export function Pricing() {
       price: 1980,
       yearlyPrice: 19800,
       priceId: {
-        monthly: 'price_1SfPBXCY4jOV83AyuleCcsKe',
-        yearly: 'price_1SfPHJCY4jOV83AyK9JTwjaR',
+        monthly: import.meta.env.VITE_STRIPE_PRICE_PRO_MONTHLY || 'price_1SfPBXCY4jOV83AyuleCcsKe',
+        yearly: import.meta.env.VITE_STRIPE_PRICE_PRO_YEARLY || 'price_1SfPHJCY4jOV83AyK9JTwjaR',
       },
       description: t('pricing.descPro'),
       icon: Crown,
