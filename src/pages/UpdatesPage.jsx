@@ -40,11 +40,9 @@ export function UpdatesPage() {
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                     {t(`updates.${update.id}.title`)}
                   </h2>
-                  {update.description && (
-                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                      {t(`updates.${update.id}.description`)}
-                    </p>
-                  )}
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {t(`updates.${update.id}.description`)}
+                  </p>
                 </div>
               </div>
             ))}

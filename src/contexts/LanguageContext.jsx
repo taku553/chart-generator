@@ -291,7 +291,7 @@ const translations = {
     'mypage.settings.googleUserNote': 'Googleログインユーザーはパスワード変更できません',
     'mypage.settings.deleteAccount': 'アカウントを削除',
     
-    // UpdatesPage
+    // UpdatesPage 更新情報作成のページを丸々作ったよくないか？
     'updates.title': '更新情報',
     'updates.9.title': '英語切り替え機能を実装',
     'updates.9.description': '日本語・英語の切り替えに対応しました。語順の違いを考慮して翻訳データ側で各言語の自然な語順を定義し、コンポーネント側は値を渡す構造にした方がいいのは勉強になった。',
